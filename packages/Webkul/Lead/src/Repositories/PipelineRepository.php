@@ -69,10 +69,10 @@ class PipelineRepository extends Repository
      *
      * @param  array  $data
      * @param  int  $id
-     * @param  string  $pipeline
+     * @param  string  $attribute
      * @return \Webkul\Lead\Contracts\Pipeline
      */
-    public function update(array $data, $id, $pipeline = "id")
+    public function update(array $data, $id, $attribute = "id")
     {
         $pipeline = $this->find($id);
 
@@ -99,6 +99,10 @@ class PipelineRepository extends Repository
         }
 
         foreach ($previousStageIds as $stageId) {
+            $pipeline->leads()->where('lead_pipeline_stage_id', $stageId)->update([
+                'lead_pipeline_stage_id' => $pipeline->stages()->first()->id,
+            ]);
+
             $this->stageRepository->delete($stageId);
         }
 

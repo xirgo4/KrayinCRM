@@ -44,6 +44,7 @@ class ActivityDataGrid extends DataGrid
                 'activities.*',
                 'leads.id as lead_id',
                 'leads.title as lead_title',
+                'leads.lead_pipeline_id',
                 'users.id as created_by_id',
                 'users.name as created_by',
             )
@@ -94,9 +95,20 @@ class ActivityDataGrid extends DataGrid
     public function addColumns()
     {
         $this->addColumn([
-            'index'      => 'title',
-            'label'      => trans('admin::app.datagrid.title'),
-            'type'       => 'string',
+            'index'            => 'is_done',
+            'label'            => trans('admin::app.datagrid.is_done'),
+            'type'             => 'dropdown',
+            'dropdown_options' => $this->getBooleanDropdownOptions('yes_no'),
+            'searchable'       => false,
+            'closure'          => function ($row) {
+                return view('admin::activities.datagrid.is-done', compact('row'))->render();
+            },
+        ]);
+
+        $this->addColumn([
+            'index' => 'title',
+            'label' => trans('admin::app.datagrid.title'),
+            'type'  => 'string',
         ]);
 
         $this->addColumn([
@@ -114,9 +126,12 @@ class ActivityDataGrid extends DataGrid
         ]);
 
         $this->addColumn([
-            'index'      => 'comment',
-            'label'      => trans('admin::app.datagrid.comment'),
-            'type'       => 'string',
+            'index'   => 'comment',
+            'label'   => trans('admin::app.datagrid.comment'),
+            'type'    => 'string',
+            'closure' => function ($row) {
+                return $row->comment;
+            },
         ]);
 
         $this->addColumn([
@@ -125,7 +140,7 @@ class ActivityDataGrid extends DataGrid
             'type'       => 'string',
             'searchable' => false,
             'closure'    => function ($row) {
-                $route = urldecode(route('admin.leads.index', ['view_type' => 'table', 'id[eq]' => $row->lead_id]));
+                $route = urldecode(route('admin.leads.index', ['pipeline_id' => $row->lead_pipeline_id, 'view_type' => 'table', 'id[eq]' => $row->lead_id]));
 
                 return "<a href='" . $route . "'>" . $row->lead_title . "</a>";
             },
@@ -134,54 +149,44 @@ class ActivityDataGrid extends DataGrid
         $this->addColumn([
             'index'      => 'type',
             'label'      => trans('admin::app.datagrid.type'),
-            'type'       => 'boolean',
+            'type'       => 'dropdown',
+            'dropdown_options' => $this->getActivityTypeDropdownOptions(),
             'searchable' => false,
-        ]);
-
-        $this->addColumn([
-            'index'              => 'is_done',
-            'label'              => trans('admin::app.datagrid.is_done'),
-            'type'               => 'dropdown',
-            'dropdown_options'   => $this->getBooleanDropdownOptions(),
-            'searchable'         => false,
-            'closure'            => function ($row) {
-                if ($row->is_done) {
-                    return '<span class="badge badge-round badge-success"></span>' . __('admin::app.common.yes');
-                } else {
-                    return '<span class="badge badge-round badge-danger"></span>' . __('admin::app.common.no');
-                }
+            'filterable' => false,
+            'closure'  => function ($row) {
+                return trans('admin::app.activities.'.$row->type);
             },
         ]);
 
         $this->addColumn([
-            'index'           => 'schedule_from',
-            'label'           => trans('admin::app.datagrid.schedule_from'),
-            'type'            => 'string',
-            'searchable'      => false,
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'      => 'schedule_from',
+            'label'      => trans('admin::app.datagrid.schedule_from'),
+            'type'       => 'date_range',
+            'searchable' => false,
+            'sortable'   => true,
+            'closure'    => function ($row) {
                 return core()->formatDate($row->schedule_from);
             },
         ]);
 
         $this->addColumn([
-            'index'           => 'schedule_to',
-            'label'           => trans('admin::app.datagrid.schedule_to'),
-            'type'            => 'string',
-            'searchable'      => false,
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'      => 'schedule_to',
+            'label'      => trans('admin::app.datagrid.schedule_to'),
+            'type'       => 'date_range',
+            'searchable' => false,
+            'sortable'   => true,
+            'closure'    => function ($row) {
                 return core()->formatDate($row->schedule_to);
             },
         ]);
 
         $this->addColumn([
-            'index'           => 'created_at',
-            'label'           => trans('admin::app.datagrid.created_at'),
-            'type'            => 'date_range',
-            'searchable'      => false,
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'      => 'created_at',
+            'label'      => trans('admin::app.datagrid.created_at'),
+            'type'       => 'date_range',
+            'searchable' => false,
+            'sortable'   => true,
+            'closure'    => function ($row) {
                 return core()->formatDate($row->created_at);
             },
         ]);
@@ -195,59 +200,59 @@ class ActivityDataGrid extends DataGrid
     public function prepareTabFilters()
     {
         $this->addTabFilter([
-            'type'      => 'pill',
             'key'       => 'type',
+            'type'      => 'pill',
             'condition' => 'eq',
             'values'    => [
                 [
-                    'name'      => 'admin::app.leads.all',
-                    'isActive'  => true,
-                    'key'       => 'all',
+                    'name'     => 'admin::app.leads.all',
+                    'isActive' => true,
+                    'key'      => 'all',
                 ], [
-                    'name'      => 'admin::app.leads.call',
-                    'isActive'  => false,
-                    'key'       => 'call',
+                    'name'     => 'admin::app.leads.call',
+                    'isActive' => false,
+                    'key'      => 'call',
                 ], [
-                    'name'      => 'admin::app.leads.meeting',
-                    'isActive'  => false,
-                    'key'       => 'meeting',
+                    'name'     => 'admin::app.leads.meeting',
+                    'isActive' => false,
+                    'key'      => 'meeting',
                 ], [
-                    'name'      => 'admin::app.leads.lunch',
-                    'isActive'  => false,
-                    'key'       => 'lunch',
+                    'name'     => 'admin::app.leads.lunch',
+                    'isActive' => false,
+                    'key'      => 'lunch',
                 ]
             ]
         ]);
 
         $this->addTabFilter([
-            'type'      => 'group',
             'key'       => 'scheduled',
+            'type'      => 'group',
             'condition' => 'eq',
             'values'    => [
                 [
-                    'name'      => 'admin::app.datagrid.filters.yesterday',
-                    'isActive'  => false,
-                    'key'       => 'yesterday',
+                    'name'     => 'admin::app.datagrid.filters.yesterday',
+                    'isActive' => false,
+                    'key'      => 'yesterday',
                 ], [
-                    'name'      => 'admin::app.datagrid.filters.today',
-                    'isActive'  => false,
-                    'key'       => 'today',
+                    'name'     => 'admin::app.datagrid.filters.today',
+                    'isActive' => false,
+                    'key'      => 'today',
                 ], [
-                    'name'      => 'admin::app.datagrid.filters.tomorrow',
-                    'isActive'  => false,
-                    'key'       => 'tomorrow',
+                    'name'     => 'admin::app.datagrid.filters.tomorrow',
+                    'isActive' => false,
+                    'key'      => 'tomorrow',
                 ], [
-                    'name'      => 'admin::app.datagrid.filters.this-week',
-                    'isActive'  => false,
-                    'key'       => 'this_week',
+                    'name'     => 'admin::app.datagrid.filters.this-week',
+                    'isActive' => false,
+                    'key'      => 'this_week',
                 ], [
-                    'name'      => 'admin::app.datagrid.filters.this-month',
-                    'isActive'  => false,
-                    'key'       => 'this_month',
+                    'name'     => 'admin::app.datagrid.filters.this-month',
+                    'isActive' => false,
+                    'key'      => 'this_month',
                 ], [
-                    'name'      => 'admin::app.datagrid.filters.custom',
-                    'isActive'  => false,
-                    'key'       => 'custom',
+                    'name'     => 'admin::app.datagrid.filters.custom',
+                    'isActive' => false,
+                    'key'      => 'custom',
                 ]
             ]
         ]);
@@ -283,6 +288,17 @@ class ActivityDataGrid extends DataGrid
      */
     public function prepareMassActions()
     {
+        $this->addMassAction([
+            'type'    => 'update',
+            'label'   => trans('ui::app.datagrid.is-done'),
+            'action'  => route('admin.activities.mass_update'),
+            'method'  => 'PUT',
+            'options' => [
+                trans('admin::app.datagrid.yes') => 1,
+                trans('admin::app.datagrid.no')  => 0,
+            ],
+        ]);
+
         $this->addMassAction([
             'type'   => 'delete',
             'label'  => trans('ui::app.datagrid.delete'),

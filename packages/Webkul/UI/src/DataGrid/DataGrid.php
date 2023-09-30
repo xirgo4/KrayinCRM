@@ -2,15 +2,17 @@
 
 namespace Webkul\UI\DataGrid;
 
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Webkul\UI\DataGrid\Traits\ProvideBouncer;
 use Webkul\UI\DataGrid\Traits\ProvideCollection;
 use Webkul\UI\DataGrid\Traits\ProvideExceptionHandler;
+use Webkul\UI\DataGrid\Traits\ProvideExport;
 
 abstract class DataGrid
 {
-    use ProvideBouncer, ProvideCollection, ProvideExceptionHandler;
+    use ProvideBouncer, ProvideCollection, ProvideExceptionHandler, ProvideExport;
 
     /**
      * Set index columns, ex: id. Default index is `id`.
@@ -24,7 +26,7 @@ abstract class DataGrid
      *
      * @var string
      */
-    protected $sortOrder = 'asc';
+    protected $sortOrder = 'desc';
 
     /**
      * Hold query builder instance of the query prepared by executing datagrid
@@ -48,6 +50,13 @@ abstract class DataGrid
      * @var array
      */
     protected $filterMap = [];
+
+    /**
+     * Row properties.
+     *
+     * @var array
+     */
+    protected $rowProperties = [];
 
     /**
      * Array to hold all the columns which will be displayed on frontend.
@@ -96,9 +105,9 @@ abstract class DataGrid
     /**
      * Final result of the datagrid program that is collection object.
      *
-     * @var array
+     * @var object
      */
-    protected $collection = [];
+    protected $collection;
 
     /**
      * Parsed value of the url parameters.
@@ -201,6 +210,13 @@ abstract class DataGrid
     ];
 
     /**
+     * Export option.
+     *
+     * @var boolean
+     */
+    protected $export = false;
+
+    /**
      * Create datagrid instance.
      *
      * @return void
@@ -208,6 +224,15 @@ abstract class DataGrid
     public function __construct()
     {
         $this->invoker = $this;
+    }
+
+    /**
+     * Initial stage. Add your extra settings here.
+     *
+     * @return void
+     */
+    public function init()
+    {
     }
 
     /**
@@ -261,6 +286,18 @@ abstract class DataGrid
 
             Event::dispatch($eventName, $this->invoker);
         }
+    }
+
+    /**
+     * Prepare row.
+     *
+     * @return void
+     */
+    public function setRowProperties(array $rowProperties)
+    {
+        $this->checkRequiredRowPropertiesKeys($rowProperties);
+
+        $this->rowProperties = $rowProperties;
     }
 
     /**
@@ -376,6 +413,8 @@ abstract class DataGrid
     {
         return [
             'index'             => $this->index,
+            'export'            => $this->export,
+            'className'         => Crypt::encryptString(get_called_class()),
             'records'           => $this->collection,
             'columns'           => $this->completeColumnDetails,
             'tabFilters'        => $this->tabFilters,
@@ -399,6 +438,8 @@ abstract class DataGrid
      */
     public function toJson()
     {
+        $this->init();
+
         $this->addColumns();
 
         $this->prepareTabFilters();

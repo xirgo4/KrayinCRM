@@ -57,29 +57,29 @@ class EmailDataGrid extends DataGrid
         ]);
 
         $this->addColumn([
-            'index'           => 'name',
-            'label'           => trans('admin::app.datagrid.from'),
-            'type'            => 'string',
-            'sortable'        => true,
+            'index'    => 'name',
+            'label'    => trans('admin::app.datagrid.from'),
+            'type'     => 'string',
+            'sortable' => true,
         ]);
 
         $this->addColumn([
-            'index'           => 'subject',
-            'label'           => trans('admin::app.datagrid.subject'),
-            'type'            => 'string',
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'    => 'subject',
+            'label'    => trans('admin::app.datagrid.subject'),
+            'type'     => 'string',
+            'sortable' => true,
+            'closure'  => function ($row) {
                 return '<div class="subject-wrapper"><span class="subject-content">' . $row->subject . '</span><span class="reply"> - ' . substr(strip_tags($row->reply), 0, 225) . '<span></div>';
             },
         ]);
 
         $this->addColumn([
-            'index'           => 'created_at',
-            'label'           => trans('admin::app.datagrid.created_at'),
-            'type'            => 'date_range',
-            'searchable'      => false,
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'      => 'created_at',
+            'label'      => trans('admin::app.datagrid.created_at'),
+            'type'       => 'date_range',
+            'searchable' => false,
+            'sortable'   => true,
+            'closure'    => function ($row) {
                 return core()->formatDate($row->created_at);
             },
         ]);
@@ -108,6 +108,11 @@ class EmailDataGrid extends DataGrid
             'title'        => trans('ui::app.datagrid.delete'),
             'method'       => 'DELETE',
             'route'        => 'admin.mail.delete',
+            'params'       => [
+                                'type' => request('route') == 'trash'
+                                    ? 'delete'
+                                    : 'trash'
+                            ],
             'confirm_text' => trans('ui::app.datagrid.massaction.delete', ['resource' => 'email']),
             'icon'         => 'trash-icon',
         ]);
@@ -120,10 +125,25 @@ class EmailDataGrid extends DataGrid
      */
     public function prepareMassActions()
     {
+        if (request('route') == 'trash') {
+            $this->addMassAction([
+                'type'   => 'delete',
+                'label'  => trans('admin::app.datagrid.move-to-inbox'),
+                'action' => route('admin.mail.mass_update', [
+                                'folders' => ['inbox'],
+                            ]),
+                'method' => 'PUT',
+            ]);
+        }
+
         $this->addMassAction([
             'type'   => 'delete',
             'label'  => trans('ui::app.datagrid.delete'),
-            'action' => route('admin.mail.mass_delete'),
+            'action' => route('admin.mail.mass_delete', [
+                            'type' => request('route') == 'trash'
+                                ? 'delete'
+                                : 'trash',
+                        ]),
             'method' => 'PUT',
         ]);
     }

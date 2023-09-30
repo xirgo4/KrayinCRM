@@ -4,6 +4,7 @@ namespace Webkul\Admin\Http\Controllers\Activity;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 use Webkul\Activity\Repositories\ActivityRepository;
 use Webkul\Activity\Repositories\FileRepository;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -84,11 +85,52 @@ class ActivityController extends Controller
      */
     public function index()
     {
-        if (request()->ajax()) {
+        return view('admin::activities.index');
+    }
+
+    /**
+     * Returns a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function get()
+    {
+        if (request('view_type')) {
+            $startDate = request()->get('startDate')
+                        ? Carbon::createFromTimeString(request()->get('startDate') . " 00:00:01")
+                        : Carbon::now()->startOfWeek()->format('Y-m-d H:i:s');
+
+            $endDate = request()->get('endDate')
+                    ? Carbon::createFromTimeString(request()->get('endDate') . " 23:59:59")
+                    : Carbon::now()->endOfWeek()->format('Y-m-d H:i:s');
+
+            $activities = $this->activityRepository->getActivities([$startDate, $endDate])->toArray();
+
+            return response()->json([
+                'activities' => $activities,
+            ]);
+        } else {
             return app(\Webkul\Admin\DataGrids\Activity\ActivityDataGrid::class)->toJson();
         }
+    }
 
-        return view('admin::activities.index');
+    /**
+     * Check if activity duration is overlapping with another activity duration.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function checkIfOverlapping()
+    {
+        $isOverlapping = $this->activityRepository->isDurationOverlapping(
+            request('schedule_from'),
+            request('schedule_to'),
+            request('participants'),
+            request('id')
+        );
+
+        return response()->json([
+            'overlapping' => $isOverlapping,
+        ]);
     }
 
     /**
@@ -164,7 +206,7 @@ class ActivityController extends Controller
      */
     public function update($id)
     {
-        Event::dispatch('activity.update.before');
+        Event::dispatch('activity.update.before', $id);
 
         $activity = $this->activityRepository->update(request()->all(), $id);
 
@@ -200,7 +242,6 @@ class ActivityController extends Controller
 
         if (request()->ajax()) {
             return response()->json([
-                'status'  => true,
                 'message' => trans('admin::app.activities.update-success', ['type' => trans('admin::app.activities.' . $activity->type)]),
             ]);
         } else {
@@ -208,6 +249,40 @@ class ActivityController extends Controller
 
             return redirect()->route('admin.activities.index');
         }
+    }
+
+    /**
+     * Mass Update the specified resources.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function massUpdate()
+    {
+        $count = 0;
+
+        $data = request()->all();
+
+        foreach (request('rows') as $activityId) {
+            Event::dispatch('activity.update.before', $activityId);
+
+            $activity = $this->activityRepository->update([
+                'is_done' => request('value'),
+            ], $activityId);
+
+            Event::dispatch('activity.update.after', $activity);
+
+            $count++;
+        }
+
+        if (! $count) {
+            return response()->json([
+                'message' => trans('admin::app.activities.mass-update-failed'),
+            ], 400);
+        }
+
+        return response()->json([
+            'message' => trans('admin::app.activities.mass-update-success'),
+        ]);
     }
 
     /**
@@ -294,12 +369,10 @@ class ActivityController extends Controller
             Event::dispatch('activity.delete.after', $id);
 
             return response()->json([
-                'status'    => true,
-                'message'   => trans('admin::app.activities.destroy-success', ['type' => trans('admin::app.activities.' . $activity->type)]),
+                'message' => trans('admin::app.activities.destroy-success', ['type' => trans('admin::app.activities.' . $activity->type)]),
             ], 200);
         } catch (\Exception $exception) {
             return response()->json([
-                'status'  => false,
                 'message' => trans('admin::app.activities.destroy-failed', ['type' => trans('admin::app.activities.' . $activity->type)]),
             ], 400);
         }
@@ -312,13 +385,16 @@ class ActivityController extends Controller
      */
     public function massDestroy()
     {
-        $data = request()->all();
+        foreach (request('rows') as $activityId) {
+            Event::dispatch('activity.delete.before', $activityId);
 
-        $this->activityRepository->destroy($data['rows']);
+            $this->activityRepository->delete($activityId);
+
+            Event::dispatch('activity.delete.after', $activityId);
+        }
 
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.activities.title')])
+            'message' => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.activities.title')])
         ]);
     }
 }

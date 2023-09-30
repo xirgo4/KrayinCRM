@@ -45,7 +45,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('mail.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.mail.index', ['route' => 'compose']) }}">
@@ -55,7 +55,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('contacts.persons.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.contacts.persons.create') }}">
@@ -65,7 +65,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('contacts.organizations.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.contacts.organizations.create') }}">
@@ -75,7 +75,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('products.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.products.create') }}">
@@ -85,7 +85,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('settings.automation.attributes.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.settings.attributes.create') }}">
@@ -95,7 +95,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('settings.user.roles.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.settings.roles.create') }}">
@@ -105,7 +105,7 @@
                                 </a>
                             </div>
                         @endif
-                        
+
                         @if (bouncer()->hasPermission('settings.user.users.create'))
                             <div class="quick-link-item">
                                 <a href="{{ route('admin.settings.users.create') }}">
@@ -123,9 +123,15 @@
 
         <div class="profile-info">
             <div class="dropdown-toggle">
-                <div class="avatar">
-                    <span class="icon avatar-icon"></span>
-                </div>
+                @if (auth()->guard('user')->user()->image)
+                    <div class="avatar">
+                        <img src="{{ auth()->guard('user')->user()->image_url }}"/>
+                    </div>
+                @else
+                    <div class="avatar">
+                        <span class="icon avatar-icon"></span>
+                    </div>
+                @endif
 
                 <div class="info">
                     <span class="howdy">{{ __('admin::app.layouts.howdy') }}</span>
@@ -143,8 +149,19 @@
                         <li>
                             <a href="{{ route('admin.user.account.edit') }}">{{ __('admin::app.layouts.my-account') }}</a>
                         </li>
+
                         <li>
-                            <a href="{{ route('admin.session.destroy') }}">{{ __('admin::app.layouts.sign-out') }}</a>
+                            <form id="adminLogout" action="{{ route('admin.session.destroy') }}" method="POST">
+                                @csrf
+
+                                @method('DELETE')
+                            </form>
+
+                            <a
+                                href="javascript:void(0);"
+                                onclick="event.preventDefault(); document.getElementById('adminLogout').submit();">
+                                {{ __('admin::app.layouts.sign-out') }}
+                            </a>
                         </li>
                     </ul>
                 </div>

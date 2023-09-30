@@ -139,7 +139,6 @@ class RoleController extends Controller
     public function destroy($id)
     {
         $response = [
-            'status'       => false,
             'responseCode' => 400,
         ];
 
@@ -167,9 +166,8 @@ class RoleController extends Controller
                     $message = trans('admin::app.settings.roles.delete-success');
 
                     $response = [
-                        'status'        => true,
-                        'responseCode'  => 200,
-                        'message'       => $message,
+                        'responseCode' => 200,
+                        'message'      => $message,
                     ];
 
                     session()->flash('success', $message);

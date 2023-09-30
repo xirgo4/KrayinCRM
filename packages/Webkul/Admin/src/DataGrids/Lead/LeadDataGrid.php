@@ -3,6 +3,7 @@
 namespace Webkul\Admin\DataGrids\Lead;
 
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Webkul\Admin\Traits\ProvideDropdownOptions;
 use Webkul\Lead\Repositories\PipelineRepository;
 use Webkul\Lead\Repositories\StageRepository;
@@ -67,6 +68,27 @@ class LeadDataGrid extends DataGrid
         $this->userRepository = $userRepository;
 
         parent::__construct();
+
+        $this->export = bouncer()->hasPermission('leads.persons.export') ? true : false;
+    }
+
+    /**
+     * Place your datagrid extra settings here.
+     *
+     * @return void
+     */
+    public function init()
+    {
+        $this->setRowProperties([
+            'backgroundColor' => '#ffd0d6',
+            'condition' => function ($row) {
+                if (in_array($row->stage_code, ['won', 'lost']) || ! $row->rotten_lead) {
+                    return false;
+                }
+
+                return true;
+            }
+        ]);
     }
 
     /**
@@ -83,12 +105,18 @@ class LeadDataGrid extends DataGrid
                 'leads.status',
                 'leads.lead_value',
                 'leads.expected_close_date',
+                'lead_sources.name as lead_source_name',
                 'leads.created_at',
+                'lead_pipeline_stages.name as stage',
+                'lead_tags.tag_id as tag_id',
                 'users.id as user_id',
-                'users.name as user_name',
+                'users.name as sales_person',
                 'persons.id as person_id',
                 'persons.name as person_name',
-                'lead_pipeline_stages.name as stage'
+                'tags.name as tag_name',
+                'lead_pipelines.rotten_days as pipeline_rotten_days',
+                'lead_pipeline_stages.code as stage_code',
+                DB::raw('CASE WHEN DATEDIFF(NOW(),' . DB::getTablePrefix() . 'leads.created_at) >=' . DB::getTablePrefix() . 'lead_pipelines.rotten_days THEN 1 ELSE 0 END as rotten_lead'),
             )
             ->leftJoin('users', 'leads.user_id', '=', 'users.id')
             ->leftJoin('persons', 'leads.person_id', '=', 'persons.id')
@@ -96,6 +124,9 @@ class LeadDataGrid extends DataGrid
             ->leftJoin('lead_pipeline_stages', 'leads.lead_pipeline_stage_id', '=', 'lead_pipeline_stages.id')
             ->leftJoin('lead_sources', 'leads.lead_source_id', '=', 'lead_sources.id')
             ->leftJoin('lead_pipelines', 'leads.lead_pipeline_id', '=', 'lead_pipelines.id')
+            ->leftJoin('lead_tags', 'leads.id', '=', 'lead_tags.lead_id')
+            ->leftJoin('tags', 'tags.id', '=', 'lead_tags.tag_id')
+            ->groupBy('leads.id')
             ->where('leads.lead_pipeline_id', $this->pipeline->id);
 
         $currentUser = auth()->guard('user')->user();
@@ -108,17 +139,21 @@ class LeadDataGrid extends DataGrid
             }
         }
 
+        if (! is_null(request()->input('rotten_lead.in'))) {
+            $queryBuilder->havingRaw(DB::getTablePrefix() . 'rotten_lead = ' . request()->input('rotten_lead.in'));
+        }
+
         $this->addFilter('id', 'leads.id');
         $this->addFilter('user', 'leads.user_id');
-
-        /**
-         * Linked should be `leads.user_id` but displaying should be `user_name`.
-         */
-        $this->addFilter('user_name', 'leads.user_id');
-
+        $this->addFilter('sales_person', 'leads.user_id');
+        $this->addFilter('lead_source_name', 'lead_sources.id');
+        $this->addFilter('person_name', 'persons.name');
         $this->addFilter('type', 'lead_pipeline_stages.code');
         $this->addFilter('stage', 'lead_pipeline_stages.name');
+        $this->addFilter('tag_name', 'tags.name');
+        $this->addFilter('expected_close_date', 'leads.expected_close_date');
         $this->addFilter('created_at', 'leads.created_at');
+        $this->addFilter('rotten_lead',  DB::raw('DATEDIFF(NOW(), ' . DB::getTablePrefix() . 'leads.created_at) >= ' . DB::getTablePrefix() . 'lead_pipelines.rotten_days'));
 
         $this->setQueryBuilder($queryBuilder);
     }
@@ -133,17 +168,22 @@ class LeadDataGrid extends DataGrid
         $this->addColumn([
             'index'    => 'id',
             'label'    => trans('admin::app.datagrid.id'),
-            'type'     => 'hidden',
+            'type'     => 'string',
             'sortable' => true,
         ]);
 
         $this->addColumn([
-            'index'            => 'user_name',
+            'index'            => 'sales_person',
             'label'            => trans('admin::app.datagrid.sales-person'),
             'type'             => 'dropdown',
             'dropdown_options' => $this->getUserDropdownOptions(),
             'searchable'       => false,
             'sortable'         => true,
+            'closure'          => function ($row) {
+                $route = urldecode(route('admin.settings.users.index', ['id[eq]' => $row->user_id]));
+
+                return "<a href='" . $route . "'>" . $row->sales_person . "</a>";
+            },
         ]);
 
         $this->addColumn([
@@ -151,6 +191,22 @@ class LeadDataGrid extends DataGrid
             'label'    => trans('admin::app.datagrid.subject'),
             'type'     => 'string',
             'sortable' => true,
+        ]);
+
+        $this->addColumn([
+            'index'    => 'tag_name',
+            'label'    => trans('admin::app.datagrid.tags'),
+            'type'     => 'hidden',
+            'sortable' => true,
+        ]);
+
+        $this->addColumn([
+            'index'            => 'lead_source_name',
+            'label'            => trans('admin::app.leads.lead-source-name'),
+            'type'             => 'dropdown',
+            'dropdown_options' => $this->getleadSourcesOptions(),
+            'searchable'       => false,
+            'sortable'         => true,
         ]);
 
         $this->addColumn([
@@ -182,6 +238,7 @@ class LeadDataGrid extends DataGrid
             'type'       => 'string',
             'searchable' => false,
             'sortable'   => false,
+            'filterable' => false,
             'closure'    => function ($row) {
                 if ($row->stage == 'Won') {
                     $badge = 'success';
@@ -193,6 +250,19 @@ class LeadDataGrid extends DataGrid
 
                 return "<span class='badge badge-round badge-{$badge}'></span>" . $row->stage;
             },
+        ]);
+
+        $this->addColumn([
+            'index'             => 'rotten_lead',
+            'label'             => trans('admin::app.datagrid.rotten_lead'),
+            'type'              => 'single_dropdown',
+            'dropdown_options'  => $this->getYesNoDropdownOptions(),
+            'sortable'          => true,
+            'searchable'        => false,
+            'condition'         => 'eq',
+            'closure'           => function ($row) {
+                return ! $row->rotten_lead || in_array($row->stage_code, ['won', 'lost']) ? trans('admin::app.common.no') : trans('admin::app.common.yes');
+            }
         ]);
 
         $this->addColumn([
@@ -232,18 +302,18 @@ class LeadDataGrid extends DataGrid
         $values = $this->pipeline->stages()
             ->get(['name', 'code as key', DB::raw('false as isActive')])
             ->prepend([
-                'isActive'  => true,
-                'key'       => 'all',
-                'name'      => trans('admin::app.datagrid.all'),
+                'isActive' => true,
+                'key'      => 'all',
+                'name'     => trans('admin::app.datagrid.all'),
             ])
             ->toArray();
 
         $this->addTabFilter([
-            'type'              => 'pill',
-            'key'               => 'type',
-            'condition'         => 'eq',
-            'value_type'        => 'lookup',
-            'values'            => $values,
+            'key'        => 'type',
+            'type'       => 'pill',
+            'condition'  => 'eq',
+            'value_type' => 'lookup',
+            'values'     => $values,
         ]);
     }
 
@@ -279,7 +349,7 @@ class LeadDataGrid extends DataGrid
     {
         $stages = [];
 
-        foreach ($this->stageRepository->get(['id', 'name'])->toArray() as $stage) {
+        foreach ($this->pipeline->stages->toArray() as $stage) {
             $stages[$stage['name']] = $stage['id'];
         }
 

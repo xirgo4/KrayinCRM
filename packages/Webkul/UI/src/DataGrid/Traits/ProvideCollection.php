@@ -2,7 +2,6 @@
 
 namespace Webkul\UI\DataGrid\Traits;
 
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 trait ProvideCollection
@@ -44,23 +43,23 @@ trait ProvideCollection
             $columnName = $this->findColumnType($key)[1] ?? null;
 
             switch ($key) {
-                /**
+                    /**
                  * All sorting related method will go here.
                  */
                 case 'sort':
                     $this->sortCollection($collection, $info);
                     break;
 
-                /**
-                 * All search related method will go here.
-                 */
+                    /**
+                     * All search related method will go here.
+                     */
                 case 'search':
                     $this->searchCollection($collection, $info);
                     break;
 
-                /**
-                 *  Default case is for filter. All filter related method will go here.
-                 */
+                    /**
+                     *  Default case is for filter. All filter related method will go here.
+                     */
                 default:
                     if ($this->exceptionCheckInColumns($columnName)) {
                         return $collection;
@@ -90,6 +89,8 @@ trait ProvideCollection
     public function formatCollection()
     {
         $this->collection->transform(function ($record) {
+            $this->transformRows($record);
+
             $this->transformActions($record);
 
             $this->transformColumns($record);
@@ -100,7 +101,7 @@ trait ProvideCollection
         /**
          * To Do (@devansh-webkul): Need to handle from record's column. For this frontend also needs to adjust.
          */
-        foreach($this->columns as $index => $column) {
+        foreach ($this->columns as $index => $column) {
             if (! isset($this->completeColumnDetails[$index]['searchable'])) {
                 $this->completeColumnDetails[$index]['searchable'] = true;
             }
@@ -280,13 +281,13 @@ trait ProvideCollection
                     $dates = explode(',', $filterValue);
 
                     if (! empty($dates) && count($dates) == 2) {
-                        if ($dates[1] == '') {
-                            $dates[1] = Carbon::today()->format('Y-m-d');
+                        if ($dates[0] != '') {
+                            $this->resolve($collection, $columnName, 'gte', $dates[0], 'whereDate');
                         }
 
-                        $this->resolve($collection, $columnName, 'gte', $dates[0], 'whereDate');
-
-                        $this->resolve($collection, $columnName, 'lte', $dates[1], 'whereDate');
+                        if ($dates[1] != '') {
+                            $this->resolve($collection, $columnName, 'lte', $dates[1], 'whereDate');
+                        }
                     }
                     break;
 
@@ -313,7 +314,7 @@ trait ProvideCollection
      */
     private function transformColumns($record)
     {
-        foreach($this->columns as $index => $column) {
+        foreach ($this->columns as $index => $column) {
             if (isset($column['closure'])) {
                 $record->{$column['index']} = $column['closure']($record);
             } else {
@@ -331,6 +332,19 @@ trait ProvideCollection
     }
 
     /**
+     * Transform your rows.
+     *
+     * @parma  object  $record
+     * @return void
+     */
+    private function transformRows($record)
+    {
+        $record->rowProperties = isset($this->rowProperties['condition']) && $this->rowProperties['condition']($record)
+            ? $record->rowProperties = $this->rowProperties
+            : [];
+    }
+
+    /**
      * Transform your actions.
      *
      * @parma  object  $record
@@ -338,7 +352,7 @@ trait ProvideCollection
      */
     private function transformActions($record)
     {
-        foreach($this->actions as $action) {
+        foreach ($this->actions as $action) {
             $toDisplay = (isset($action['condition']) && gettype($action['condition']) == 'object') ? $action['condition']($record) : true;
 
             $toDisplayKey = $this->generateKeyFromActionTitle($action['title'], '_to_display');
@@ -367,8 +381,21 @@ trait ProvideCollection
     private function exceptionCheckInColumns($columnName)
     {
         foreach ($this->completeColumnDetails as $column) {
-            if ($column['index'] === $columnName && (isset($column['filterable']) && ! $column['filterable'])) {
-                return true;
+            if ($column['index'] === $columnName) {
+                /**
+                 * If tab filter is activated then filterable should be done.
+                 */
+                if (collect($this->tabFilters)->contains('key', $columnName)) {
+                    return false;
+                }
+
+                /**
+                 * After passing from tab filter, it will check for the filerable
+                 * properties in column.
+                 */
+                if (isset($column['filterable']) && ! $column['filterable']) {
+                    return true;
+                }
             }
         }
 

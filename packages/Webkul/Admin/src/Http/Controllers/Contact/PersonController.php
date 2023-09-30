@@ -95,7 +95,7 @@ class PersonController extends Controller
      */
     public function update(AttributeForm $request, $id)
     {
-        Event::dispatch('contacts.person.update.before');
+        Event::dispatch('contacts.person.update.before', $id);
 
         $person = $this->personRepository->update($this->sanitizeRequestedPersonData(), $id);
 
@@ -131,20 +131,18 @@ class PersonController extends Controller
         $person = $this->personRepository->findOrFail($id);
 
         try {
-            Event::dispatch('contacts.person.delete.before', $person);
+            Event::dispatch('contacts.person.delete.before', $id);
 
             $this->personRepository->delete($id);
 
             Event::dispatch('contacts.person.delete.after', $id);
 
             return response()->json([
-                'status'    => true,
-                'message'   => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.contacts.persons.person')]),
+                'message' => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.contacts.persons.person')]),
             ], 200);
         } catch (\Exception $exception) {
             return response()->json([
-                'status'    => false,
-                'message'   => trans('admin::app.response.destroy-failed', ['name' => trans('admin::app.contacts.persons.person')]),
+                'message' => trans('admin::app.response.destroy-failed', ['name' => trans('admin::app.contacts.persons.person')]),
             ], 400);
         }
     }
@@ -156,13 +154,16 @@ class PersonController extends Controller
      */
     public function massDestroy()
     {
-        $data = request()->all();
+        foreach (request('rows') as $personId) {
+            Event::dispatch('contact.person.delete.before', $personId);
 
-        $this->personRepository->destroy($data['rows']);
+            $this->personRepository->delete($personId);
+
+            Event::dispatch('contact.person.delete.after', $personId);
+        }
 
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.contacts.persons.title')])
+            'message' => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.contacts.persons.title')])
         ]);
     }
 
@@ -176,7 +177,7 @@ class PersonController extends Controller
         $data = request()->all();
 
         $data['contact_numbers'] = collect($data['contact_numbers'])->filter(function ($number) {
-            return !is_null($number['value']);
+            return ! is_null($number['value']);
         })->toArray();
 
         return $data;

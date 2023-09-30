@@ -7,67 +7,86 @@
 @push('scripts')
     <script type="text/x-template" id="stage-component-template">
         <div>
-            <div class="pipeline-stage-container">
-                <ul class="pipeline-stages" :class="currentStage.code">
-                    <li
-                        class="stage"
-                        v-for="(stage, index) in customStages"
-                        :class="{ active: currentStage.id >= stage.id }"
-                        @click="changeStage(stage)"
-                        v-if="stage.code != 'won' && stage.code != 'lost'"
-                    >
-                        <span>@{{ stage.name }}</span>
-                    </li>
+            <div class="pipeline-stage-controls-wrapper" ref="stageWrapper">
+                <div class="pipeline-stage-container">
+                    <ul class="pipeline-stages" :class="currentStage.code" ref="stageContainer">
+                        <li
+                            class="stage"
+                            v-for="(stage, index) in customStages"
+                            :class="{ active: currentStage.sort_order >= stage.sort_order }"
+                            :title="stage.name"
+                            @click="changeStage(stage)"
+                            v-if="stage.code != 'won' && stage.code != 'lost'"
+                        >
+                            <span>@{{ stage.name }}</span>
+                        </li>
 
-                    <li class="stage">
-                        <span class="dropdown-toggle">
-                            {{ __('admin::app.leads.won-lost') }}
-                            <i class="icon arrow-down-s-icon"></i>
-                        </span>
+                        <li class="stage">
+                            <span class="dropdown-toggle">
+                                {{ __('admin::app.leads.won-lost') }}
+                                <i class="icon arrow-down-s-icon"></i>
+                            </span>
 
-                        <div class="dropdown-list">
-                            <div class="dropdown-container">
-                                <ul>
-                                    <li @click="nextStageCode = 'won'; $root.openModal('updateLeadStageModal')">
-                                        {{ __('admin::app.leads.won') }}
-                                    </li>
-                                    
-                                    <li @click="nextStageCode = 'lost'; $root.openModal('updateLeadStageModal')">
-                                        {{ __('admin::app.leads.lost') }}
-                                    </li>
-                                </ul>
+                            <div class="dropdown-list">
+                                <div class="dropdown-container">
+                                    <ul>
+                                        <li @click="nextStageCode = 'won'; $root.openModal('updateLeadStageModal')">
+                                            {{ __('admin::app.leads.won') }}
+                                        </li>
+                                        
+                                        <li @click="nextStageCode = 'lost'; $root.openModal('updateLeadStageModal')">
+                                            {{ __('admin::app.leads.lost') }}
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                    </li>
-                </ul>
+                        </li>
+                    </ul>
+
+                    <div class="pipeline-stage-controls" v-if="showStageControl">
+                        <a class="btn btn-sm btn-secondary-outline" @click="scrollLeft">
+                            <i class="icon arrow-left-icon"></i>
+                        </a>
+
+                        <a class="btn btn-sm btn-secondary-outline" @click="scrollRight">
+                            <i class="icon arrow-right-icon"></i>
+                        </a>
+                    </div>
+                </div>
 
                 <div class="date-panel">
                     <span class="pull-left">
                         <i class="icon calendar-icon"></i>
                         <label>{{ __('admin::app.leads.created-date:') }}</label>
-                        <span>{{ $lead->created_at->diffForHumans() }}</span>
+                        <span title="{{ core()->formatDate($lead->created_at) }}">{{ $lead->created_at->diffForHumans() }}</span>
                     </span>
 
                     <span class="pull-right">
 
-                        @if (in_array($lead->stage->code, ['won', 'lost']))
-
+                        @if ($lead->closed_at && in_array($lead->stage->code, ['won', 'lost']))
+                            
                             <i class="icon calendar-icon"></i>
                             <label>{{ __('admin::app.leads.closed-date:') }}</label>
-                            <span>{{ $lead->closed_at->diffForHumans() }}</span>
+                            <span title="{{ core()->formatDate($lead->closed_at, 'd M Y') }}">{{ $lead->closed_at->diffForHumans() }}</span>
 
                         @elseif ($lead->expected_close_date)
 
-                             <i class="icon calendar-icon"></i>
+                            <i class="icon calendar-icon"></i>
                             <label>{{ __('admin::app.leads.expected-close-date:') }}</label>
-                            <span>{{ $lead->expected_close_date->diffForHumans() }}</span>
+                            <span title="{{ core()->formatDate($lead->expected_close_date, 'd M Y') }}">
+                                {{
+                                    $lead->expected_close_date->format('d-M-Y') == \Carbon\Carbon::now()->format('d-M-Y')
+                                    ? 'Today'
+                                    : $lead->expected_close_date->diffForHumans()
+                                }}
+                            </span>
 
                         @endif
                     </span>
                 </div>
             </div>
 
-            <form action="{{ route('admin.leads.update', $lead->id) }}" method="post" data-vv-scope="change-stage-form">
+            <form action="{{ route('admin.leads.update', $lead->id) }}" method="post" data-vv-scope="change-stage-form" @submit.prevent="$root.onSubmit($event, 'change-stage-form')">
                 <modal id="updateLeadStageModal" :is-open="$root.modalIds.updateLeadStageModal">
                     <h3 slot="header-title">{{ __('admin::app.leads.change-stage') }}</h3>
                     
@@ -96,12 +115,22 @@
                             <input type="text" name="lead_value" class="control" value="{{ $lead->lead_value }}" />
                         </div>
 
-                        <div class="form-group date">
+                        <div class="form-group date" :class="[errors.has('change-stage-form.closed_at') ? 'has-error' : '']">
                             <label>{{ __('admin::app.leads.closed-date') }}</label>
 
                             <date>
-                                <input type="text" name="closed_at" class="control" />
+                                <input
+                                    type="text"
+                                    name="closed_at"
+                                    class="control"
+                                    v-validate="'date_format:yyyy-MM-dd|after:{{$lead->created_at->subDays(1)->format('Y-m-d')}}'"
+                                    data-vv-as="&quot;{{ __('admin::app.leads.closed-date') }}&quot;"
+                                />
                             </date>
+
+                            <span class="control-error" v-if="errors.has('change-stage-form.closed_at')">
+                                @{{ errors.first('change-stage-form.closed_at') }}
+                            </span>
                         </div>
                     </div>
                 </modal>
@@ -123,6 +152,8 @@
                     nextStageCode: null,
 
                     customStages: @json($lead->pipeline->stages),
+
+                    showStageControl: false,
                 }
             },
 
@@ -140,8 +171,20 @@
                 },
             },
 
+            mounted: function () {
+                var stagesWidht = this.customStages.length * 200;
+
+                if (stagesWidht > this.$refs.stageWrapper.clientWidth) {
+                    this.showStageControl = true;
+                }
+            },
+
             methods: {
                 changeStage: function(stage) {
+                    if (this.currentStage.code == stage.code) {
+                        return;
+                    }
+
                     var self = this;
 
                     this.$http.put("{{ route('admin.leads.update', $lead->id) }}", {'lead_pipeline_stage_id': stage.id})
@@ -154,6 +197,14 @@
                         })
                         .catch (function (error) {
                         })
+                },
+
+                scrollLeft: function () {
+                    this.$refs.stageContainer.scrollLeft -= 200;
+                },
+
+                scrollRight: function () {
+                    this.$refs.stageContainer.scrollLeft += 200;
                 }
             }
         });

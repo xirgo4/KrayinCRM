@@ -5,6 +5,7 @@ namespace Webkul\Email\Mails;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Mime\Email as MimeEmail;
 
 class Email extends Mailable
 {
@@ -35,15 +36,16 @@ class Email extends Mailable
      */
     public function build()
     {
-        $this->to($this->email->reply_to)
+        $this->from($this->email->from)
+            ->to($this->email->reply_to)
             ->replyTo($this->email->parent_id ? $this->email->parent->unique_id : $this->email->unique_id)
             ->cc($this->email->cc ?? [])
             ->bcc($this->email->bcc ?? [])
             ->subject($this->email->parent_id ? $this->email->parent->subject : $this->email->subject)
             ->html($this->email->reply);
-        
-        $this->withSwiftMessage(function ($message) {
-            $message->getHeaders()->addTextHeader('Message-ID', $this->email->message_id);
+
+        $this->withSymfonyMessage(function (MimeEmail $message) {
+            $message->getHeaders()->addIdHeader('Message-ID', $this->email->message_id);
 
             $message->getHeaders()->addTextHeader('References', $this->email->parent_id
                 ? implode(' ', $this->email->parent->reference_ids)

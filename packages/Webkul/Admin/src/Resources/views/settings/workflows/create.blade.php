@@ -51,6 +51,8 @@
             </div>
         </form>
     </div>
+
+    @include('admin::common.custom-attributes.edit.lookup')
 @stop
 
 @push('scripts')
@@ -236,11 +238,17 @@
                     </div>
 
                     <div class="form-group" v-if="matchedAttribute.type == 'select' || matchedAttribute.type == 'radio' || matchedAttribute.type == 'lookup'">
-                        <select :name="['conditions[' + index + '][value]']" class="control" v-model="condition.value">
+                        <select :name="['conditions[' + index + '][value]']" class="control" v-model="condition.value" v-if="! matchedAttribute.lookup_type">
                             <option v-for='option in matchedAttribute.options' :value="option.id">
                                 @{{ option.name }}
                             </option>
                         </select>
+
+                        <lookup-component
+                            :attribute="{'code': 'conditions[' + index + '][value]', 'name': 'Email', 'lookup_type': matchedAttribute.lookup_type}"
+                            validations="required|email"
+                            v-else
+                        ></lookup-component>
                     </div>
 
                     <div class="form-group" v-if="matchedAttribute.type == 'multiselect' || matchedAttribute.type == 'checkbox'">
@@ -321,11 +329,17 @@
                     </div>
 
                     <div class="form-group" v-if="matchedAttribute.type == 'select' || matchedAttribute.type == 'radio' || matchedAttribute.type == 'lookup'">
-                        <select :name="['actions[' + index + '][value]']" class="control" v-model="action.value">
+                        <select :name="['actions[' + index + '][value]']" class="control" v-model="action.value" v-if="! matchedAttribute.lookup_type">
                             <option v-for='option in matchedAttribute.options' :value="option.id">
                                 @{{ option.name }}
                             </option>
                         </select>
+
+                        <lookup-component
+                            :attribute="{'code': 'actions[' + index + '][value]', 'name': matchedAttribute.name, 'lookup_type': matchedAttribute.lookup_type}"
+                            validations="required"
+                            v-else
+                        ></lookup-component>
                     </div>
 
                     <div class="form-group" v-if="matchedAttribute.type == 'multiselect' || matchedAttribute.type == 'checkbox'">
@@ -707,6 +721,8 @@
                                 'label': 'work',
                                 'value': ''
                             }];
+                    } else if (matchedAttribute[0]['type'] == 'text') {
+                        this.action.value = '';
                     }
 
                     return matchedAttribute[0];

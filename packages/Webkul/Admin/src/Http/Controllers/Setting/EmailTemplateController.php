@@ -148,19 +148,16 @@ class EmailTemplateController extends Controller
             Event::dispatch('settings.email_templates.delete.after', $id);
 
             return response()->json([
-                'status'  => true,
                 'message' => trans('admin::app.settings.email-templates.delete-success'),
             ], 200);
         } catch(\Exception $exception) {
             return response()->json([
-                'status'  => false,
                 'message' => trans('admin::app.settings.email-templates.delete-failed'),
             ], 400);
         }
 
         return response()->json([
-            'status'    => false,
-            'message'   => trans('admin::app.settings.email-templates.delete-failed'),
+            'message' => trans('admin::app.settings.email-templates.delete-failed'),
         ], 400);
     }
 }

@@ -126,19 +126,16 @@ class WorkflowController extends Controller
             Event::dispatch('settings.workflow.delete.after', $id);
 
             return response()->json([
-                'status'  => true,
                 'message' => trans('admin::app.settings.workflows.delete-success'),
             ], 200);
         } catch(\Exception $exception) {
             return response()->json([
-                'status'  => false,
                 'message' => trans('admin::app.settings.workflows.delete-failed'),
             ], 400);
         }
 
         return response()->json([
-            'status'    => false,
-            'message'   => trans('admin::app.settings.workflows.delete-failed'),
+            'message' => trans('admin::app.settings.workflows.delete-failed'),
         ], 400);
     }
 }

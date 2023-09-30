@@ -129,6 +129,7 @@
             'back'                     => 'Back',
             'cancel'                   => 'Cancel',
             'no-lead'                  => 'No Lead',
+            'lead-source-name'         => 'Lead source',
             'details'                  => 'Details',
             'rotten-info'              => 'Lead has been rotten for :days day(s)',
             'stage'                    => 'Stage',
@@ -175,6 +176,7 @@
             'schedule'                 => 'Schedule',
             'from'                     => 'From',
             'to'                       => 'To',
+            'location'                 => 'Location',
             'participants'             => 'Participants',
             'participant-info'         => 'Start typing name',
             'users'                    => 'Users',
@@ -207,6 +209,8 @@
             'planned'                  => 'Planned',
             'done'                     => 'Done',
             'edit'                     => 'Edit',
+            'view'                     => 'View',
+            'unlink'                   => 'Unlink',
             'mark-as-done'             => 'Mark as Done',
             'remove'                   => 'Remove',
             'export-to-pdf'            => 'Export To PDF',
@@ -216,11 +220,11 @@
             'call-scheduled'           => 'Call scheduled at :from - :to',
             'meeting-scheduled'        => 'Meeting scheduled at :from - :to',
             'lunch-scheduled'          => 'Lunch scheduled at :from - :to',
-            'email-scheduled'          => 'Email scheduled at :from - :to',
             'file-added'               => 'File added',
             'quote-destroy-success'    => 'Quote removed successfully.',
             'tag-create-success'       => 'Tag added successfully.',
             'tag-destroy-success'      => 'Tag removed successfully.',
+            'edit'                     => 'Edit',
         ],
 
         'quotes' => [
@@ -265,7 +269,8 @@
             'sub-total'           => 'Sub Total',
             'tax'                 => 'Tax',
             'adjustment'          => 'Adjustment',
-            'grand-total'         => 'Grand Total'
+            'grand-total'         => 'Grand Total',
+            'search'              => 'Search..'
         ],
 
         'mail' => [
@@ -307,6 +312,7 @@
             'saved-to-draft'          => 'Email saved to draft.',
             'delete-success'          => 'Email deleted successfully.',
             'delete-failed'           => 'Email can not be deleted.',
+            'mass-update-success'     => 'Emails updated successfully.',
 
             'forget-password' => [
                 'subject'           => 'Customer Reset Password',
@@ -324,28 +330,34 @@
         ],
 
         'activities' => [
-            'title'               => 'Activities',
-            'title-control'       => 'Title',
-            'edit-title'          => 'Edit Activity',
-            'save-btn-title'      => 'Save as Activity',
-            'back'                => 'Back',
-            'type'                => 'Type',
-            'note'                => 'Note',
-            'call'                => 'Call',
-            'meeting'             => 'Meeting',
-            'lunch'               => 'Lunch',
-            'file'                => 'File',
-            'description'         => 'Description',
-            'schedule'            => 'Schedule',
-            'from'                => 'From',
-            'to'                  => 'To',
-            'participants'        => 'Participants',
-            'file-upload-success' => 'File(s) uploaded successfully.',
-            'file-upload-error'   => 'File(s) can not be uploaded.',
-            'create-success'      => ':type created successfully.',
-            'update-success'      => ':type updated successfully.',
-            'destroy-success'     => ':type deleted successfully.',
-            'delete-failed'       => ':type can not be deleted.',
+            'title'                => 'Activities',
+            'title-control'        => 'Title',
+            'edit-title'           => 'Edit Activity',
+            'save-btn-title'       => 'Save as Activity',
+            'back'                 => 'Back',
+            'type'                 => 'Type',
+            'note'                 => 'Note',
+            'call'                 => 'Call',
+            'meeting'              => 'Meeting',
+            'lunch'                => 'Lunch',
+            'file'                 => 'File',
+            'description'          => 'Description',
+            'schedule'             => 'Schedule',
+            'from'                 => 'From',
+            'to'                   => 'To',
+            'location'             => 'Location',
+            'participants'         => 'Participants',
+            'lead'                 => 'Lead',
+            'duration-overlapping' => 'Participants have another meeting at this time. Do you want to continue?',
+            'file-upload-success'  => 'File(s) uploaded successfully.',
+            'file-upload-error'    => 'File(s) can not be uploaded.',
+            'create-success'       => ':type created successfully.',
+            'update-success'       => ':type updated successfully.',
+            'mass-update-success'  => 'Activities updated successfully.',
+            'mass-update-failed'   => 'Activities can not be updated.',
+            'destroy-success'      => ':type deleted successfully.',
+            'delete-failed'        => ':type can not be deleted.',
+            'typing-placeholder'   => 'Start typing name',
         ],
 
         'products' => [
@@ -458,7 +470,9 @@
                 'last-delete-error'   => 'At least one user is required.',
                 'user-define-error'   => 'Can not delete system user.',
                 'mass-update-success' => 'Users updated successfully.',
+                'mass-update-failed'  => 'Users can not be updated.',
                 'mass-delete-success' => 'Users deleted successfully.',
+                'mass-delete-failed'  => 'Users can not be deleted.',
             ],
 
             'attributes' => [
@@ -507,7 +521,8 @@
                 'update-error'          => 'Unable to update attribute.',
                 'delete-success'        => 'Attribute deleted successfully.',
                 'delete-failed'         => 'Attribute can not be deleted.',
-                'user-define-error'     => 'Can not delete system attribute.'
+                'user-define-error'     => 'Can not delete system attribute.',
+                'mass-delete-failed'    => 'Attributes can not be deleted.',
             ],
 
             'pipelines' => [
@@ -523,6 +538,9 @@
                 'is-default'           => 'Mark as Default',
                 'probability'          => 'Probability (%)',
                 'add-stage-btn-title'  => 'Add Stage',
+                'new-stage'            => 'New',
+                'won-stage'            => 'Won',
+                'lost-stage'           => 'Lost',
                 'duplicate-name'       => 'The "Name" field cannot be duplicate',
                 'create-success'       => 'Pipeline created successfully.',
                 'update-success'       => 'Pipeline updated successfully.',
@@ -540,6 +558,7 @@
                 'back'           => 'Back',
                 'cancel'         => 'Cancel',
                 'create-success' => 'Source created successfully.',
+                'name-exists'    => 'Source name already exists.',
                 'update-success' => 'Source updated successfully.',
                 'delete-success' => 'Source deleted successfully.',
                 'delete-failed'  => 'Source can not be deleted.',
@@ -554,6 +573,7 @@
                 'back'           => 'Back',
                 'cancel'         => 'Cancel',
                 'create-success' => 'Type created successfully.',
+                'name-exists'    => 'Type name already exists.',
                 'update-success' => 'Type updated successfully.',
                 'delete-success' => 'Type deleted successfully.',
                 'delete-failed'  => 'Type can not be deleted.',
@@ -642,7 +662,14 @@
                 'update-success' => 'Tag updated successfully.',
                 'delete-success' => 'Tag deleted successfully.',
                 'delete-failed'  => 'Tag can not be deleted.',
-            ]
+            ],
+
+            'web-forms' => [
+
+                'create-success' => 'Web form created successfully',
+                'update-success' => 'Web form Updated successfully',
+                'delete-success' => 'Web form deleted successfully'
+            ],
         ],
 
         'configuration' => [
@@ -662,7 +689,7 @@
         ],
 
         'datagrid' => [
-            'id'                  => 'Id',
+            'id'                  => 'ID',
             'name'                => 'Name',
             'code'                => 'Code',
             'sku'                 => 'SKU',
@@ -674,6 +701,7 @@
             'lead'                => 'Lead',
             'title'               => 'Title',
             'subject'             => 'Subject',
+            'tags'                => 'Tags',
             'emails'              => 'Emails',
             'stage'               => 'Stage',
             'status'              => 'Status',
@@ -688,6 +716,7 @@
             'all'                 => 'All',
             'user'                => 'User',
             'sales-person'        => 'Sales Person',
+            'expired_quotes'      => 'Expired Quotes',
             'person'              => 'Person',
             'sub-total'           => 'Sub Total',
             'discount'            => 'Discount',
@@ -710,9 +739,14 @@
             'organization_name'   => 'Organization Name',
             'is-default'          => 'Is Default',
             'rotten-days'         => 'Rotten Days',
+            'rotten_lead'         => 'Rotten Lead',
+            'yes'                 => 'Yes',
+            'no'                  => 'No',
+            'move-to-inbox'       => 'Move to Inbox',
             'update-success'      => ':resource updated successfully.',
             'destroy-success'     => ':resource deleted successfully.',
             'destroy-failed'      => ':resource can not be deleted.',
+            'attribute_type'      => 'Attribute Type',
             'filters'             => [
                 'yesterday'       => 'Yesterday',
                 'today'           => 'Today',
@@ -735,6 +769,11 @@
             'lead'            => 'Lead',
             'quotes'          => 'Quotes',
             'mail'            => 'Mail',
+            'inbox'           => 'Inbox',
+            'draft'           => 'Draft',
+            'outbox'          => 'Outbox',
+            'sent'            => 'Sent',
+            'trash'           => 'Trash',
             'activities'      => 'Activities',
             'contacts'        => 'Contacts',
             'persons'         => 'Persons',
@@ -754,10 +793,13 @@
             'workflows'       => 'Workflows',
             'other-settings'  => 'Other Settings',
             'tags'            => 'Tags',
+            'configuration'   => 'Configuration',
             'create'          => 'Create',
             'edit'            => 'Edit',
             'view'            => 'View',
+            'print'           => 'Print',
             'delete'          => 'Delete',
+            'export'          => 'Export',
             'mass-delete'     => 'Mass Delete',
         ],
 
@@ -768,6 +810,7 @@
             'add_more'            => 'Add More',
             'select-country'      => 'Please select country',
             'select-users'        => 'Select Users',
+            'select_rotten_leads' => 'Select Rotten Leads',
             'select-organization' => 'Select Organizations',
             'state'               => 'State',
             'select-state'        => 'Please select state',
@@ -779,27 +822,49 @@
             'no-result-found'     => 'Records not found with same name.',
             'add-as'              => 'Add as new',
             'not-available'       => 'Not Available',
+            'select-options'      => 'Select Options',
             'yes'                 => 'Yes',
             'no'                  => 'No',
             'delete'              => 'Delete',
             'save'                => 'Save',
+            'locale'              => 'Locale',
+            'en'                  => 'English',
+            'tr'                  => 'Türkçe',
+            'ar'                  => 'Arabic',          
             'add-as'              => 'Add as new',
             'no-records-found'    => 'No Records Found',
-            'start-typing'        => 'Start typing to search records'
+            'start-typing'        => 'Start typing to search records',
+            'select-type'         => 'Select Type',
+            'select-call'         => 'Call',
+            'select-meeting'      => 'Meeting',
+            'select-lunch'        => 'Lunch',
+            'duplicate-value'     => 'The value cannot be duplicate',
+            'unauthenticated'     => 'Unauthenticated',
+            'resource-not-found'  => 'Resource not found',
+            'forbidden-error'     => '403 forbidden Error',
+            'internal-server-error' => '500 Internal Server Error',
+            'something-went-wrong'  => 'Something went wrong, please try again later.',
+            'delete-confirm'        => 'Do you really want to perform this action?',
+            'system_attribute'      => 'System', 
+            'custom_attribute'      => 'Custom', 
         ],
 
         'user' => [
             'account' => [
-                'name'              => 'Name',
-                'email'             => 'Email',
-                'password'          => 'Password',
-                'my_account'        => 'My account',
-                'update_details'    => 'Update Details',
-                'current_password'  => 'Current password',
-                'confirm_password'  => 'Confirm password',
-                'password-match'    => 'Current password does not match.',
-                'account-save'      => 'Account changes saved successfully.',
-                'permission-denied' => 'Permission Denied'
+                'name'                  => 'Name',
+                'email'                 => 'Email',
+                'password'              => 'Password',
+                'my_account'            => 'My account',
+                'update_details'        => 'Update Details',
+                'current_password'      => 'Current password',
+                'confirm_password'      => 'Confirm password',
+                'password-match'        => 'Current password does not match.',
+                'account-save'          => 'Account changes saved successfully.',
+                'permission-denied'     => 'Permission Denied',
+                'remove-image'          => 'Remove Image',
+                'upload_image_pix'      => 'Upload a Profile Image (100px x 100px)',
+                'upload_image_format'   =>'in PNG or JPG Format',
+                'image_upload_message'  => 'Only images (.jpeg, .jpg, .png, ..) are allowed.'
             ]
         ],
 
@@ -808,6 +873,10 @@
                 'dear'   => 'Dear :name',
                 'cheers' => 'Cheers,</br>Team :app_name'
             ],
+        ],
+
+        'errors' => [
+            '401' => 'You are not authorized to access this page'
         ]
     ];
 ?>

@@ -20,6 +20,12 @@
                     <label for="email" class="required">{{ __('admin::app.leads.item') }}</label>
 
                     <input
+                        type="hidden"
+                        :name="[inputName + '[name]']"
+                        v-model="product['name']"
+                    />
+
+                    <input
                         type="text"
                         :name="[inputName + '[product_id]']"
                         class="control"
@@ -27,6 +33,7 @@
                         v-validate="'required'"
                         data-vv-as="&quot;{{ __('admin::app.leads.item') }}&quot;"
                         v-on:keyup="search"
+                        placeholder="{{ __('admin::app.common.start-typing') }}"
                     />
 
                     <input
@@ -94,7 +101,7 @@
 
                 <div class="form-group" :class="[errors.has('{!! $formScope ?? '' !!}' + inputName + '[amount]') ? 'has-error' : '']">
                     <label for="email" class="required">{{ __('admin::app.leads.amount') }}</label>
-
+                    
                     <input
                         type="text"
                         :name="[inputName + '[amount]']"

@@ -56,7 +56,7 @@ trait ProvideTabFilters
     {
         switch ($key) {
             case 'duration':
-                return $this->filterMap['created_at'] ?? 'created_at';
+                return ['schedule_from', 'schedule_to'];
 
             case 'scheduled':
                 return $this->filterMap['schedule_from'] ?? 'schedule_from';
@@ -77,8 +77,6 @@ trait ProvideTabFilters
     public function resolveCustomTabFiltersQuery($collection, $key, $info)
     {
         $value = array_values($info)[0];
-
-        $startDate = Carbon::now()->format('Y-m-d');
 
         $column = $this->resolveCustomTabFiltersColumn($key);
 
@@ -105,21 +103,16 @@ trait ProvideTabFilters
                 break;
 
             case 'this_week':
-                $endDate = Carbon::now()->addDays(7)->format('Y-m-d');
-
                 $collection->whereBetween(
                     $column,
-                    [$startDate, $endDate]
+                    [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]
                 );
                 break;
 
             case 'this_month':
-                $endDate = Carbon::now()->addDays(30)->format('Y-m-d');
-
-                $collection->whereBetween(
-                    $column,
-                    [$startDate, $endDate]
-                );
+                $collection
+                    ->whereMonth($column, Carbon::now()->format('m'))
+                    ->whereYear($column, Carbon::now()->format('Y'));
                 break;
 
             default:
@@ -132,9 +125,9 @@ trait ProvideTabFilters
                                 $dates[1] = Carbon::today()->format('Y-m-d');
                             }
 
-                            $collection->whereDate($column, '>=', $dates[0]);
+                            $collection->whereDate($column[0], '>=', $dates[0]);
 
-                            $collection->whereDate($column, '<=', $dates[1]);
+                            $collection->whereDate($column[1], '<=', $dates[1]);
                         }
                     } else {
                         $collection->where($column, $value);
@@ -157,10 +150,13 @@ trait ProvideTabFilters
         foreach ($this->tabFilters as $filterIndex => $filter) {
             if (in_array($key, $this->customTabFilters)) {
                 foreach ($filter['values'] as $filterValueIndex => $filterValue) {
-                    if (array_keys($info)[0] == 'bw' && $filterValue['key'] == 'custom') {
+                    if (
+                        (array_keys($info)[0] == 'bw' && $filterValue['key'] == 'custom') ||
+                        $filterValue['key'] == array_values($info)[0]
+                    ) {
                         $this->tabFilters[$filterIndex]['values'][$filterValueIndex]['isActive'] = true;
-                    } else {
-                        $this->tabFilters[$filterIndex]['values'][$filterValueIndex]['isActive'] = ($filterValue['key'] == array_values($info)[0]);
+                    } else if ($filterValue['key'] == 'all') {
+                        $this->tabFilters[$filterIndex]['values'][$filterValueIndex]['isActive'] = false;
                     }
                 }
 

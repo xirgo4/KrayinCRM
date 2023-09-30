@@ -58,7 +58,7 @@
                         action="{{ route('admin.activities.store') }}"
                         method="post"
                         data-vv-scope="activity-form"
-                        @submit.prevent="onSubmit($event, 'activity-form')"
+                        @submit.prevent="checkIfOverlapping($event, 'activity-form')"
                     >
 
                         <input type="hidden" name="lead_id" value="{{ $lead->id }}">
@@ -100,12 +100,6 @@
                             </span>
                         </div>
 
-                        <div class="form-group">
-                            <label for="comment">{{ __('admin::app.leads.description') }}</label>
-
-                            <textarea class="control" id="activity-comment" name="comment">{{ old('comment') }}</textarea>
-                        </div>
-
                         <div class="form-group date" :class="[errors.has('activity-form.schedule_from') || errors.has('activity-form.schedule_to') ? 'has-error' : '']">
                             <label for="schedule_from" class="required">{{ __('admin::app.leads.schedule') }}</label>
 
@@ -115,6 +109,7 @@
                                         type="text"
                                         name="schedule_from"
                                         class="control"
+                                        v-model="schedule_from"
                                         ref="schedule_from"
                                         placeholder="{{ __('admin::app.leads.from') }}"
                                         v-validate="'required|date_format:yyyy-MM-dd HH:mm:ss|after:{{\Carbon\Carbon::now()->format('Y-m-d H:i:s')}}'"
@@ -131,6 +126,7 @@
                                         type="text"
                                         name="schedule_to"
                                         class="control"
+                                        v-model="schedule_to"
                                         ref="schedule_to"
                                         placeholder="{{ __('admin::app.leads.to') }}"
                                         v-validate="'required|date_format:yyyy-MM-dd HH:mm:ss|after:schedule_from'"
@@ -142,6 +138,21 @@
                                     </span>
                                 </datetime>
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="location">{{ __('admin::app.leads.location') }}</label>
+
+                            <input name="location" class="control"/>
+                        </div>
+
+                        <div class="form-group video-conference">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comment">{{ __('admin::app.leads.description') }}</label>
+
+                            <textarea class="control" id="activity-comment" name="comment">{{ old('comment') }}</textarea>
                         </div>
 
                         <div class="form-group">
@@ -216,114 +227,116 @@
 
             {!! view_render_event('admin.leads.view.informations.activity_actions.email.before', ['lead' => $lead]) !!}
 
-            <tab name="{{ __('admin::app.leads.email') }}">
-                <form
-                    action="{{ route('admin.mail.store') }}"
-                    method="post"
-                    enctype="multipart/form-data"
-                    data-vv-scope="email-form"
-                    @submit.prevent="onSubmit($event, 'email-form')"
-                >
+            @if (bouncer()->hasPermission('mail.compose'))
+                <tab name="{{ __('admin::app.leads.email') }}">
+                    <form
+                        action="{{ route('admin.mail.store') }}"
+                        method="post"
+                        enctype="multipart/form-data"
+                        data-vv-scope="email-form"
+                        @submit.prevent="onSubmit($event, 'email-form')"
+                    >
 
-                    @csrf()
+                        @csrf()
 
-                    <input type="hidden" name="lead_id" value="{{ $lead->id }}"/>
+                        <input type="hidden" name="lead_id" value="{{ $lead->id }}"/>
 
-                    @include ('admin::common.custom-attributes.edit.email-tags')
+                        @include ('admin::common.custom-attributes.edit.email-tags')
 
-                    <div class="form-group email-control-group" :class="[errors.has('email-form.reply_to[]') ? 'has-error' : '']">
-                        <label for="to" class="required">{{ __('admin::app.leads.to') }}</label>
+                        <div class="form-group email-control-group" :class="[errors.has('email-form.reply_to[]') ? 'has-error' : '']">
+                            <label for="to" class="required">{{ __('admin::app.leads.to') }}</label>
 
-                        <email-tags-component
-                            control-name="reply_to[]"
-                            control-label="{{ __('admin::app.leads.to') }}"
-                            :validations="'required'"
-                        ></email-tags-component>
+                            <email-tags-component
+                                control-name="reply_to[]"
+                                control-label="{{ __('admin::app.leads.to') }}"
+                                :validations="'required'"
+                            ></email-tags-component>
 
-                        <span class="control-error" v-if="errors.has('email-form.reply_to[]')">
-                            @{{ errors.first('email-form.reply_to[]') }}
-                        </span>
+                            <span class="control-error" v-if="errors.has('email-form.reply_to[]')">
+                                @{{ errors.first('email-form.reply_to[]') }}
+                            </span>
 
-                        <div class="email-address-options">
-                            <label @click="show_cc = ! show_cc">
-                                {{ __('admin::app.leads.cc') }}
-                            </label>
+                            <div class="email-address-options">
+                                <label @click="show_cc = ! show_cc">
+                                    {{ __('admin::app.leads.cc') }}
+                                </label>
 
-                            <label @click="show_bcc = ! show_bcc">
-                                {{ __('admin::app.leads.bcc') }}
-                            </label>
+                                <label @click="show_bcc = ! show_bcc">
+                                    {{ __('admin::app.leads.bcc') }}
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group email-control-group" :class="[errors.has('email-form.cc[]') ? 'has-error' : '']" v-if="show_cc">
-                        <label for="cc">{{ __('admin::app.leads.cc') }}</label>
+                        <div class="form-group email-control-group" :class="[errors.has('email-form.cc[]') ? 'has-error' : '']" v-if="show_cc">
+                            <label for="cc">{{ __('admin::app.leads.cc') }}</label>
 
-                        <email-tags-component
-                            control-name="cc[]"
-                            control-label="{{ __('admin::app.leads.cc') }}"
-                        ></email-tags-component>
+                            <email-tags-component
+                                control-name="cc[]"
+                                control-label="{{ __('admin::app.leads.cc') }}"
+                            ></email-tags-component>
 
-                        <span class="control-error" v-if="errors.has('email-form.cc[]')">
-                            @{{ errors.first('email-form.cc[]') }}
-                        </span>
-                    </div>
+                            <span class="control-error" v-if="errors.has('email-form.cc[]')">
+                                @{{ errors.first('email-form.cc[]') }}
+                            </span>
+                        </div>
 
-                    <div class="form-group email-control-group" :class="[errors.has('email-form.bcc[]') ? 'has-error' : '']" v-if="show_bcc">
-                        <label for="bcc">{{ __('admin::app.leads.bcc') }}</label>
+                        <div class="form-group email-control-group" :class="[errors.has('email-form.bcc[]') ? 'has-error' : '']" v-if="show_bcc">
+                            <label for="bcc">{{ __('admin::app.leads.bcc') }}</label>
 
-                        <email-tags-component
-                            control-name="bcc[]"
-                            control-label="{{ __('admin::app.leads.bcc') }}"
-                        ></email-tags-component>
+                            <email-tags-component
+                                control-name="bcc[]"
+                                control-label="{{ __('admin::app.leads.bcc') }}"
+                            ></email-tags-component>
 
-                        <span class="control-error" v-if="errors.has('email-form.bcc[]')">
-                            @{{ errors.first('email-form.bcc[]') }}
-                        </span>
-                    </div>
+                            <span class="control-error" v-if="errors.has('email-form.bcc[]')">
+                                @{{ errors.first('email-form.bcc[]') }}
+                            </span>
+                        </div>
 
-                    <div class="form-group" :class="[errors.has('email-form.subject') ? 'has-error' : '']">
-                        <label for="subject" class="required">{{ __('admin::app.leads.subject') }}</label>
+                        <div class="form-group" :class="[errors.has('email-form.subject') ? 'has-error' : '']">
+                            <label for="subject" class="required">{{ __('admin::app.leads.subject') }}</label>
 
-                        <input
-                            type="text"
-                            name="subject"
-                            class="control"
-                            id="subject"
-                            v-validate="'required'"
-                            data-vv-as="&quot;{{ __('admin::app.leads.subject') }}&quot;"
-                        />
+                            <input
+                                type="text"
+                                name="subject"
+                                class="control"
+                                id="subject"
+                                v-validate="'required'"
+                                data-vv-as="&quot;{{ __('admin::app.leads.subject') }}&quot;"
+                            />
 
-                        <span class="control-error" v-if="errors.has('email-form.subject')">
-                            @{{ errors.first('email-form.subject') }}
-                        </span>
-                    </div>
+                            <span class="control-error" v-if="errors.has('email-form.subject')">
+                                @{{ errors.first('email-form.subject') }}
+                            </span>
+                        </div>
 
-                    <div class="form-group" :class="[errors.has('email-form.reply') ? 'has-error' : '']">
-                        <label for="reply" class="required" style="margin-bottom: 10px">{{ __('admin::app.leads.reply') }}</label>
+                        <div class="form-group" :class="[errors.has('email-form.reply') ? 'has-error' : '']">
+                            <label for="reply" class="required" style="margin-bottom: 10px">{{ __('admin::app.leads.reply') }}</label>
 
-                        <textarea
-                            name="reply"
-                            class="control"
-                            id="reply"
-                            v-validate="'required'"
-                            data-vv-as="&quot;{{ __('admin::app.leads.reply') }}&quot;"
-                        ></textarea>
+                            <textarea
+                                name="reply"
+                                class="control"
+                                id="reply"
+                                v-validate="'required'"
+                                data-vv-as="&quot;{{ __('admin::app.leads.reply') }}&quot;"
+                            ></textarea>
 
-                        <span class="control-error" v-if="errors.has('email-form.reply')">
-                            @{{ errors.first('email-form.reply') }}
-                        </span>
-                    </div>
+                            <span class="control-error" v-if="errors.has('email-form.reply')">
+                                @{{ errors.first('email-form.reply') }}
+                            </span>
+                        </div>
 
-                    <div class="form-group">
-                        <attachment-wrapper></attachment-wrapper>
-                    </div>
+                        <div class="form-group">
+                            <attachment-wrapper></attachment-wrapper>
+                        </div>
 
-                    <button type="submit" class="btn btn-md btn-primary">
-                        {{ __('admin::app.leads.send') }}
-                    </button>
+                        <button type="submit" class="btn btn-md btn-primary">
+                            {{ __('admin::app.leads.send') }}
+                        </button>
 
-                </form>
-            </tab>
+                    </form>
+                </tab>
+            @endif
 
             {!! view_render_event('admin.leads.view.informations.activity_actions.email.after', ['lead' => $lead]) !!}
 
@@ -386,11 +399,13 @@
 
             {!! view_render_event('admin.leads.view.informations.activity_actions.quote.before', ['lead' => $lead]) !!}
 
-            <tab name="{{ __('admin::app.leads.quote') }}">
+            @if (bouncer()->hasPermission('quotes.create'))
+                <tab name="{{ __('admin::app.leads.quote') }}">
 
-                <a href="{{ route('admin.quotes.create', $lead->id) }}" class="btn btn-primary">{{ __('admin::app.leads.create-quote') }}</a>
+                    <a href="{{ route('admin.quotes.create', $lead->id) }}" class="btn btn-primary">{{ __('admin::app.leads.create-quote') }}</a>
 
-            </tab>
+                </tab>
+            @endif
 
             {!! view_render_event('admin.leads.view.informations.activity_actions.quote.after', ['lead' => $lead]) !!}
         </tabs>
@@ -411,6 +426,10 @@
 
                     show_bcc: false,
 
+                    schedule_from: null,
+
+                    schedule_to: null,
+
                     search_term: '',
 
                     is_searching: false,
@@ -430,13 +449,26 @@
             },
 
             mounted: function() {
+                var self = this;
+                
                 tinymce.init({
                     selector: 'textarea#reply',
+
                     height: 200,
+
                     width: "100%",
+
                     plugins: 'image imagetools media wordcount save fullscreen code table lists link hr',
+
                     toolbar1: 'formatselect | bold italic strikethrough forecolor backcolor link hr | alignleft aligncenter alignright alignjustify | numlist bullist outdent indent  | removeformat | code | table',
-                    image_advtab: true
+
+                    image_advtab: true,
+
+                    setup: function(editor) {
+                        editor.on('keyUp', function() {
+                            self.$validator.validate('email-form.reply', this.getContent());
+                        });
+                    }
                 });
             },
 
@@ -482,8 +514,6 @@
                         })
                         .catch (error => {
                             this.is_searching = false;
-
-                            console.log(error)
                         })
                 }, 500),
 
@@ -503,6 +533,29 @@
                     const index = this.participants[type].indexOf(participant);
 
                     Vue.delete(this.participants[type], index);
+                },
+
+                checkIfOverlapping: function(e, formScope) {
+                    var self = this;
+
+                    this.$validator.validateAll(formScope).then(function (result) {
+                        if (result) {
+                            self.$http.post(`{{ route('admin.activities.check_overlapping') }}`, {
+                                schedule_from: self.schedule_from,
+                                schedule_to: self.schedule_to,
+                                participants: self.participants,
+                            }).then(response => {
+                                if (! response.data.overlapping) {
+                                    self.$root.onSubmit(e, formScope);
+                                } else {
+                                    if (confirm("{{ __('admin::app.activities.duration-overlapping') }}")) {
+                                        self.$root.onSubmit(e, formScope);
+                                    }
+                                }
+                            })
+                            .catch(error => {});
+                        }
+                    });
                 }
             }
         });

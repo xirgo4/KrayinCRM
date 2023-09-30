@@ -53,6 +53,7 @@
                                     value="{{ old('title') ?: $activity->title }}"
                                     v-validate="'required'"
                                     data-vv-as="&quot;{{ __('admin::app.activities.title-control') }}&quot;"
+                                    v-pre
                                 />
         
                                 <span class="control-error" v-if="errors.has('title')">@{{ errors.first('title') }}</span>
@@ -85,11 +86,6 @@
                                 </select>
         
                                 <span class="control-error" v-if="errors.has('type')">@{{ errors.first('type') }}</span>
-                            </div>
-        
-                            <div class="form-group">
-                                <label for="comment">{{ __('admin::app.activities.description') }}</label>
-                                <textarea class="control" id="activity-comment" name="comment">{{ old('comment') ?: $activity->comment }}</textarea>
                             </div>
         
                             <div class="form-group date" :class="[errors.has('schedule_from') || errors.has('schedule_to') ? 'has-error' : '']">
@@ -125,11 +121,49 @@
                                     </datetime>
                                 </div>
                             </div>
+
+                            <div class="form-group">
+                                <label for="location">{{ __('admin::app.activities.location') }}</label>
+
+                                <input name="location" class="control" value="{{ old('location') ?: $activity->location }}"/>
+                            </div>
+
+                            <div class="form-group video-conference">
+                            </div>
+        
+                            <div class="form-group">
+                                <label for="comment">{{ __('admin::app.activities.description') }}</label>
+                                <textarea class="control" id="activity-comment" name="comment" v-pre>{{ old('comment') ?: $activity->comment }}</textarea>
+                            </div>
         
                             <div class="form-group">
                                 <label for="participants">{{ __('admin::app.activities.participants') }}</label>
         
                                 <multi-lookup-component :data='@json($activity->participants)'></multi-lookup-component>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="validation">{{ __('admin::app.activities.lead') }}</label>
+
+                                @include('admin::common.custom-attributes.edit.lookup')
+
+                                @php
+                                    $lookUpEntityData = app('Webkul\Attribute\Repositories\AttributeRepository')
+                                        ->getLookUpEntity(
+                                            'leads',
+                                            old('lead_id')
+                                                ?: (
+                                                    ($lead = $activity->leads()->first())
+                                                    ? $lead->id
+                                                    : null
+                                                )
+                                            );
+                                @endphp
+
+                                <lookup-component
+                                    :attribute="{'code': 'lead_id', 'name': 'Lead', 'lookup_type': 'leads'}"
+                                    :data='@json($lookUpEntityData)'
+                                ></lookup-component>
                             </div>
 
                             {!! view_render_event('admin.activities.edit.form_controls.after', ['activity' => $activity]) !!}
@@ -151,7 +185,7 @@
     <script type="text/x-template" id="multi-lookup-component-template">
         <div class="lookup-control">
             <div class="form-group" style="margin-bottom: 0">
-                <input type="text" class="control" v-model="search_term" v-on:keyup="search" autocomplete="off">
+                <input type="text" class="control" v-model="search_term" v-on:keyup="search" autocomplete="off" placeholder="{{ __('admin::app.activities.typing-placeholder') }}">
 
                 <div class="lookup-results grouped" v-if="search_term.length">
                     <label>{{ __('admin::app.leads.users') }}</label>

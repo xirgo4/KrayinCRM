@@ -94,6 +94,44 @@ class Lead extends AbstractEntity
     }
 
     /**
+     * Returns entity
+     * 
+     * @param  \Webkul\Lead\Contracts\Lead|integer  $entity
+     * @return \Webkul\Lead\Contracts\Lead
+     */
+    public function getEntity($entity)
+    {
+        if (! $entity instanceof \Webkul\Lead\Contracts\Lead) {
+            $entity = $this->leadRepository->find($entity);
+        }
+
+        return $entity;
+    }
+
+    /**
+     * Returns attributes
+     *
+     * @param  string  $entityType
+     * @param  array  $skipAttributes
+     * @return array
+     */
+    public function getAttributes($entityType, $skipAttributes = ['textarea', 'image', 'file', 'address'])
+    {
+        $attributes[] = [
+            'id'          => 'lead_pipeline_stage_id',
+            'type'        => 'select',
+            'name'        => 'Stage',
+            'lookup_type' => 'lead_pipeline_stages',
+            'options'     => collect([]),
+        ];
+
+        return array_merge(
+            parent::getAttributes($entityType, $skipAttributes),
+            $attributes
+        );
+    }
+
+    /**
      * Returns workflow actions
      * 
      * @return array

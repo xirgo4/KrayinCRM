@@ -3,7 +3,19 @@
 <div class="navbar-left" v-bind:class="{'open': isMenuOpen}">
     <ul class="menubar">
         @foreach ($menu->items as $menuItem)
-            <li class="menu-item {{ Menu::getActive($menuItem) }}" title="{{ $menuItem['name'] }}">
+            <li
+                class="menu-item {{ Menu::getActive($menuItem) }}"
+                title="{{ $menuItem['name'] }}"
+                @if (! count($menuItem['children'])
+                    || $menuItem['key'] == 'settings'
+                )
+                    v-tooltip.right="{
+                        content: '{{ $menuItem['name'] }}',
+                        classes: [isMenuOpen ? 'hide' : 'show']
+                    }"
+                @endif
+            >
+
                 <a href="{{ $menuItem['url'] }}">
                     <i class="icon sprite {{ $menuItem['icon-class'] }}"></i>
                     
@@ -22,16 +34,6 @@
                             @endforeach
                         </ul>
                     @endif
-                @else
-                    <ul class="sub-menubar">
-                        @foreach (app('core_config')->items as $key => $item)
-                            <li class="sub-menu-item {{ $item['key'] == request()->route('slug') ? 'active' : '' }}">
-                                <a href="{{ route('admin.configuration.index', $item['key']) }}">
-                                    {{ isset($item['name']) ? trans($item['name']) : '' }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
                 @endif
             </li>
         @endforeach

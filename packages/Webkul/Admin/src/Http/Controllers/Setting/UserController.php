@@ -109,9 +109,7 @@ class UserController extends Controller
 
         try {
             Mail::queue(new Create($admin));
-        } catch (\Exception $e) {
-            report($e);
-        }
+        } catch (\Exception $e) {}
 
         Event::dispatch('settings.user.create.after', $admin);
 
@@ -190,32 +188,31 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        if ($this->userRepository->count() == 1) {
-            $status = false;
-            $responseCode = 400;
-            $message = trans('admin::app.settings.users.last-delete-error');
+        if (auth()->guard('user')->user()->id == $id) {
+            return response()->json([
+                'message' => trans('admin::app.settings.users.delete-failed'),
+            ], 400);
+        } else if ($this->userRepository->count() == 1) {
+            return response()->json([
+                'message' => trans('admin::app.settings.users.last-delete-error'),
+            ], 400);
         } else {
             Event::dispatch('settings.user.delete.before', $id);
 
             try {
                 $this->userRepository->delete($id);
 
-                $status = true;
-                $responseCode = 200;
-                $message = trans('admin::app.settings.users.delete-success');
-
                 Event::dispatch('settings.user.delete.after', $id);
+
+                return response()->json([
+                    'message' => trans('admin::app.settings.users.delete-success'),
+                ]);
             } catch (\Exception $exception) {
-                $status = false;
-                $responseCode = 400;
-                $message = $exception->getMessage();
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                ], 400);
             }
         }
-
-        return response()->json([
-            'status'    => $status,
-            'message'   => $message
-        ], $responseCode);
     }
 
     /**
@@ -225,18 +222,32 @@ class UserController extends Controller
      */
     public function massUpdate()
     {
-        $data = request()->all();
+        $count = 0;
 
-        foreach ($data['rows'] as $userId) {
-            if (($userId != auth()->guard('user')->user()->id) || ($data['value'] == 1)) {
-                $user = $this->userRepository->find($userId);
-                $user->update(['status' => $data['value']]);
+        foreach (request('rows') as $userId) {
+            if (auth()->guard('user')->user()->id == $userId) {
+                continue;
             }
+
+            Event::dispatch('settings.user.update.before', $userId);
+
+            $this->userRepository->update([
+                'status' => request('value'),
+            ], $userId);
+
+            Event::dispatch('settings.user.update.after', $userId);
+
+            $count++;
+        }
+
+        if (! $count) {
+            return response()->json([
+                'message' => trans('admin::app.settings.users.mass-update-failed'),
+            ], 400);
         }
 
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.settings.users.mass-update-success')
+            'message' => trans('admin::app.settings.users.mass-update-success'),
         ]);
     }
 
@@ -247,19 +258,30 @@ class UserController extends Controller
      */
     public function massDestroy()
     {
-        $data = request()->all();
+        $count = 0;
 
-        $currentUserId = auth()->guard('user')->user()->id;
+        foreach (request('rows') as $userId) {
+            if (auth()->guard('user')->user()->id == $userId) {
+                continue;
+            }
+            
+            Event::dispatch('settings.user.delete.before', $userId);
 
-        if (($index = array_search($currentUserId, $data['rows'])) !== false) {
-            unset($data['rows'][$index]);
+            $this->userRepository->delete($userId);
+
+            Event::dispatch('settings.user.delete.after', $userId);
+
+            $count++;
         }
 
-        $this->userRepository->destroy($data['rows']);
+        if (! $count) {
+            return response()->json([
+                'message' => trans('admin::app.settings.users.mass-delete-failed'),
+            ], 400);
+        }
 
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.settings.users.mass-delete-success')
+            'message' => trans('admin::app.settings.users.mass-delete-success'),
         ]);
     }
 }

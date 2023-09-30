@@ -3,6 +3,7 @@
 namespace Webkul\Admin\Http\Controllers\Setting;
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Validator;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Lead\Repositories\TypeRepository;
 
@@ -47,9 +48,15 @@ class TypeController extends Controller
      */
     public function store()
     {
-        $this->validate(request(), [
-            'name' => 'required',
+        $validator = Validator::make(request()->all(), [
+            'name' => 'required|unique:lead_types,name'
         ]);
+        
+        if ($validator->fails()) {
+            session()->flash('error', trans('admin::app.settings.types.name-exists'));
+
+            return redirect()->back();
+        }
 
         Event::dispatch('settings.type.create.before');
 
@@ -84,7 +91,7 @@ class TypeController extends Controller
     public function update($id)
     {
         $this->validate(request(), [
-            'name' => 'required',
+            'name' => 'required|unique:lead_types,name,' . $id,
         ]);
 
         Event::dispatch('settings.type.update.before', $id);
@@ -116,19 +123,16 @@ class TypeController extends Controller
             Event::dispatch('settings.type.delete.after', $id);
 
             return response()->json([
-                'status'  => true,
                 'message' => trans('admin::app.settings.types.delete-success'),
             ], 200);
         } catch(\Exception $exception) {
             return response()->json([
-                'status'  => false,
                 'message' => trans('admin::app.settings.types.delete-failed'),
             ], 400);
         }
 
         return response()->json([
-            'status'    => false,
-            'message'   => trans('admin::app.settings.types.delete-failed'),
+            'message' => trans('admin::app.settings.types.delete-failed'),
         ], 400);
     }
 }

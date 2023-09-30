@@ -27,8 +27,11 @@ class Locale
      */
     public function handle($request, Closure $next)
     {
-        $this->app->setLocale(core()->getConfigData('general.locale_settings.locale'));
-        
+        app()->setLocale(
+            core()->getConfigData('general.locale_settings.locale')
+                ?: app()->getLocale()
+        );
+
         return $next($request);
     }
 }

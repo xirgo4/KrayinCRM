@@ -9,7 +9,6 @@
         {!! view_render_event('admin.settings.pipelines.create.header.before') !!}
 
         <div class="page-header">
-
             {{ Breadcrumbs::render('settings.pipelines.create') }}
 
             <div class="page-title">
@@ -108,23 +107,34 @@
     </div>
 @stop
 
+@include('admin::settings.pipelines.common.pipeline-components-helper')
+
 @push('scripts')
     <script type="text/x-template" id="stages-component-template">
-
         <div class="table dragable-container">
-
             <table>
                 <thead class="thead-dark">
                     <tr>
                         <th></th>
-                        <th>{{ __('admin::app.settings.pipelines.name') }}</th>
-                        <th>{{ __('admin::app.settings.pipelines.probability') }}</th>
+                        <th>
+                            <div class="form-group">
+                                <label class="required">
+                                 {{ __('admin::app.settings.pipelines.name') }}
+                                 </label>
+                            </div>
+                        </th>
+                        <th>
+                            <div class="form-group">
+                                <label class="required">
+                                    {{ __('admin::app.settings.pipelines.probability') }}
+                                </label>
+                            </div>
+                        </th>                       
                         <th></th>
                     </tr>
                 </thead>
 
                 <draggable tag="tbody" :list="stages" draggable=".draggable">
-
                     <tr :key="stage.id" v-for="(stage, index) in stages" v-bind:class="{ draggable: isDragable(stage) }">
                         <td class="dragable-icon">
                             <i class="icon align-justify-icon" v-if="isDragable(stage)"></i>
@@ -143,10 +153,9 @@
                                     :name="'stages[' + stage.id + '][name]'"
                                     class="control"
                                     v-model="stage['name']"
-                                    v-validate="'required'"
+                                    v-validate="'required|unique_name'"
                                     data-vv-as="&quot;{{ __('admin::app.settings.pipelines.name') }}&quot;"
                                     :readonly="! isDragable(stage)"
-                                    @keyup="checkDuplicateNames($event)"
                                 />
 
                                 <input
@@ -170,7 +179,7 @@
                                     v-model="stage['probability']"
                                     v-validate="'required|numeric|min_value:0|max_value:100'"
                                     data-vv-as="&quot;{{ __('admin::app.settings.pipelines.probability') }}&quot;"
-                                    :readonly="! isDragable(stage)"
+                                    :readonly="stage.code != 'new' && ! isDragable(stage)"
                                 />
 
                                 <span class="control-error" v-if="errors.has('stages[' + stage.id + '][probability]')">
@@ -183,9 +192,7 @@
                             <i class="icon trash-icon" @click="removeStage(stage)" v-if="isDragable(stage)"></i>
                         </td>
                     </tr>
-
                 </draggable>
-
             </table>
 
             <button type="button" class="btn btn-md btn-primary mt-20" @click="addStage">
@@ -204,8 +211,8 @@
                 return {
                     stages: [{
                         'id': 'stage_1',
-                        'code': 'new',
-                        'name': 'New',
+                        'code': 'new', 
+                        'name': "{{ __('admin::app.settings.pipelines.new-stage') }}",
                         'probability': 100
                     }, {
                         'id': 'stage_2',
@@ -215,12 +222,12 @@
                     }, {
                         'id': 'stage_99',
                         'code': 'won',
-                        'name': 'Won',
+                        'name': "{{ __('admin::app.settings.pipelines.won-stage') }}",
                         'probability': 100
                     }, {
                         'id': 'stage_100',
                         'code': 'lost',
-                        'name': 'Lost',
+                        'name': "{{ __('admin::app.settings.pipelines.lost-stage') }}",
                         'probability': 0
                     }],
 
@@ -228,59 +235,12 @@
                 }
             },
 
+            created: function () {
+                this.extendValidator();
+            },
+
             methods: {
-                addStage: function () {
-                    this.stages.splice((this.stages.length - 2), 0, {
-                        'id': 'stage_' + this.stageCount++,
-                        'code': '',
-                        'name': '',
-                        'probability': 100
-                    });
-                },
-
-                removeStage: function (stage) {
-                    const index = this.stages.indexOf(stage);
-
-                    Vue.delete(this.stages, index);
-                },
-
-                isDragable: function (stage) {
-                    if (stage.code == 'new' || stage.code == 'won' || stage.code == 'lost') {
-                        return false;
-                    }
-
-                    return true;
-                },
-
-                slugify: function (name) {
-                    return name.toString()
-                        .toLowerCase()
-                        .replace(/[^\w\u0621-\u064A\u4e00-\u9fa5\u3402-\uFA6D\u3041-\u30A0\u30A0-\u31FF- ]+/g, '')
-
-                        // replace whitespaces with dashes
-                        .replace(/ +/g, '-')
-
-                        // avoid having multiple dashes (---- translates into -)
-                        .replace('![-\s]+!u', '-')
-                        .trim();
-                },
-
-                checkDuplicateNames: function ({ target }) {
-                    let filteredStages = this.stages.filter((stage) => {
-                        return stage.name == target.value;
-                    });
-
-                    if (filteredStages.length > 1) {
-                        this.errors.add({
-                            field: target.name,
-                            msg: '{!! __('admin::app.settings.pipelines.duplicate-name') !!}',
-                        });
-
-                        this.$root.toggleButtonDisable(true);
-                    } else {
-                        this.$root.toggleButtonDisable(false);
-                    }
-                },
+                ...stagesComponentMethods,
             },
         });
     </script>

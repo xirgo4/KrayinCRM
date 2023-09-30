@@ -60,8 +60,7 @@ class QuoteController extends Controller
         Event::dispatch('leads.quote.create.after', $lead);
         
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.leads.quote-create-success'),
+            'message' => trans('admin::app.leads.quote-create-success'),
         ], 200);
     }
 
@@ -74,7 +73,7 @@ class QuoteController extends Controller
      */
     public function delete($leadId)
     {
-        Event::dispatch('leads.quote.delete.before');
+        Event::dispatch('leads.quote.delete.before', $leadId);
 
         $lead = $this->leadRepository->find($leadId);
 
@@ -83,8 +82,7 @@ class QuoteController extends Controller
         Event::dispatch('leads.quote.delete.after', $lead);
         
         return response()->json([
-            'status'    => true,
-            'message'   => trans('admin::app.leads.quote-destroy-success'),
+            'message' => trans('admin::app.leads.quote-destroy-success'),
         ], 200);
     }
 }

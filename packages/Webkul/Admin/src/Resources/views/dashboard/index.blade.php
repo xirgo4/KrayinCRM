@@ -43,7 +43,7 @@
                         <template v-if="card.label">
                             <label class="card-header">
                                 @{{ card.label }}
-            
+
                                 <div class="icon-container">
                                     <a v-if="card.view_url" :href="card.view_url">
                                         <i class="icon eye-icon"></i>
@@ -52,7 +52,7 @@
                                 </div>
                             </label>
                         </template>
-            
+
                         <card-component
                             :index="index"
                             :card-type="card.card_type"
@@ -102,24 +102,30 @@
                     <div class="bar">
                         <div
                             class="primary"
-                            :style="`width: ${data.count ? (data.count * 100) / (dataCollection.total || 10) : 0}%;`"
+                            :style="`width: ${data.count ? (data.count * 100) / (dataCollection.total) : 0}%;`"
                         ></div>
                     </div>
 
-                    <span>@{{ `${data.count || 0}/${(dataCollection.total || 10)}` }}</span>
+                    <span>@{{ `${data.count || 0} / ${(dataCollection.total)}` }}</span>
                 </div>
             </template>
 
             <div class="lead" v-else-if="cardType == 'top_card'" v-for="(data, index) in dataCollection.data">
-                <label>@{{ data.title }}</label>
+
+                @if (bouncer()->hasPermission('leads.view')) 
+                    <a :href="'{{ route('admin.leads.view') }}/' + data.id">@{{ data.title }}</a>
+                @else
+                    @{{ data.title }}</a>
+                @endif
 
                 <div class="details">
                     <span>@{{ data.amount | toFixed }}</span>
                     <span>@{{ data.created_at | formatDate }}</span>
                     <span>
-                        <span class="badge badge-round badge-primary" v-if="data.status == 1"></span>
-                        <span class="badge badge-round badge-warning" v-else-if="data.status == 2"></span>
-                        <span class="badge badge-round badge-success" v-else-if="data.status == 3"></span>
+                        <span
+                            class="badge badge-round badge-primary"
+                            :class="{'badge-danger': data.statusLabel == 'Lost', 'badge-success': data.statusLabel == 'Won'}"
+                        ></span>
 
                         @{{ data.statusLabel }}
                     </span>
@@ -353,7 +359,7 @@
                         for(let index = 1; index < changeInIndex; index++) {
                             let sort = widget.sort + index;
                             let cardId = existingWidgets.find(card => card.sort == sort)?.card_id || this.cards.find(card => card.sort == sort)?.card_id
-                            
+
                             EventBus.$emit('applyCardFilter', { cardId });
                         }
                     }

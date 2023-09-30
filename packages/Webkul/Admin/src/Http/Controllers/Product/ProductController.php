@@ -95,7 +95,7 @@ class ProductController extends Controller
      */
     public function update(AttributeForm $request, $id)
     {
-        Event::dispatch('product.update.before');
+        Event::dispatch('product.update.before', $id);
 
         $product = $this->productRepository->update(request()->all(), $id);
 
@@ -138,13 +138,11 @@ class ProductController extends Controller
             Event::dispatch('settings.products.delete.after', $id);
 
             return response()->json([
-                'status'    => true,
-                'message'   => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.products.product')]),
+                'message' => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.products.product')]),
             ], 200);
         } catch(\Exception $exception) {
             return response()->json([
-                'status'    => false,
-                'message'   => trans('admin::app.response.destroy-failed', ['name' => trans('admin::app.products.product')]),
+                'message' => trans('admin::app.response.destroy-failed', ['name' => trans('admin::app.products.product')]),
             ], 400);
         }
     }
@@ -156,12 +154,15 @@ class ProductController extends Controller
      */
     public function massDestroy()
     {
-        $data = request()->all();
+        foreach (request('rows') as $productId) {
+            Event::dispatch('product.delete.before', $productId);
 
-        $this->productRepository->destroy($data['rows']);
+            $this->productRepository->delete($productId);
+
+            Event::dispatch('product.delete.after', $productId);
+        }
 
         return response()->json([
-            'status'  => true,
             'message' => trans('admin::app.response.destroy-success', ['name' => trans('admin::app.products.title')]),
         ]);
     }

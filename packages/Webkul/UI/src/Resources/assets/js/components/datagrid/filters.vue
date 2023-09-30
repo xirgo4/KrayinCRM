@@ -202,7 +202,7 @@
                     class="filter-tag"
                     v-if="ignoreDisplayFilter.indexOf(filter.column) == -1"
                 >
-                    <span v-text="filter.prettyColumn || filter.column"></span>
+                    <span>{{ __("ui.datagrid.filter." + filter.column) || filter.prettyColumn }}</span>
 
                     <span class="wrapper">
                         {{
@@ -709,15 +709,39 @@ export default {
         },
 
         onSubmit: function(event) {
+            this.$root.pageLoaded = false;
+
+            this.toggleButtonDisable(true);
+
             if (! this.massActionValue.action) {
-                alert(this.__("ui.datagrid.mandatory_mass_action"));
+                this.$root.pageLoaded = true;
+
+                this.toggleButtonDisable(false);
+
+                this.addFlashMessages({
+                    type: "error",
+                    message: this.__("ui.datagrid.mandatory_mass_action")
+                });
 
                 return;
             }
 
-            this.toggleButtonDisable(true);
+            if (this.massActionValue.type !== 'delete' && this.massActionOptionValue === 'NA') {
+                this.$root.pageLoaded = true;
+
+                this.toggleButtonDisable(false);
+
+                this.addFlashMessages({
+                    type: "error",
+                    message: this.__("ui.datagrid.mandatory_mass_action")
+                });
+
+                return;
+            }
 
             if (! confirm(this.__("ui.datagrid.massaction.delete"))) {
+                this.$root.pageLoaded = true;
+
                 this.toggleButtonDisable(false);
 
                 return;
@@ -733,6 +757,8 @@ export default {
                         }
                     )
                         .then(response => {
+                            this.$root.pageLoaded = true;
+
                             EventBus.$emit("refresh_table_data", {
                                 usePrevious: true
                             });
@@ -750,6 +776,8 @@ export default {
                             });
                         })
                         .catch(error => {
+                            this.$root.pageLoaded = true;
+
                             this.toggleButtonDisable(false);
 
                             this.addFlashMessages({
@@ -758,6 +786,8 @@ export default {
                             });
                         });
                 } else {
+                    this.$root.pageLoaded = true;
+                    
                     this.toggleButtonDisable(false);
 
                     EventBus.$emit("onFormError");

@@ -3,6 +3,7 @@
 namespace Webkul\Admin\DataGrids\Setting;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Admin\Traits\ProvideDropdownOptions;
 use Webkul\UI\DataGrid\DataGrid;
 
@@ -22,6 +23,7 @@ class UserDataGrid extends DataGrid
                 'users.id',
                 'users.name',
                 'users.email',
+                'users.image',
                 'users.status',
                 'users.created_at'
             );
@@ -39,33 +41,40 @@ class UserDataGrid extends DataGrid
     public function addColumns()
     {
         $this->addColumn([
-            'index'           => 'id',
-            'label'           => trans('admin::app.datagrid.id'),
-            'type'            => 'string',
-            'sortable'        => true,
+            'index'    => 'id',
+            'label'    => trans('admin::app.datagrid.id'),
+            'type'     => 'string',
+            'sortable' => true,
         ]);
 
         $this->addColumn([
-            'index'           => 'name',
-            'label'           => trans('admin::app.datagrid.name'),
-            'type'            => 'string',
-            'sortable'        => true,
+            'index'    => 'name',
+            'label'    => trans('admin::app.datagrid.name'),
+            'type'     => 'string',
+            'sortable' => true,
+            'closure'  => function ($row) {
+                if ($row->image) {
+                    return '<div class="avatar"><img src="' . Storage::url($row->image) . '"></div>' . $row->name;
+                } else {
+                    return '<div class="avatar"><span class="icon avatar-icon"></span></div>' . $row->name;
+                }
+            },
         ]);
 
         $this->addColumn([
-            'index'           => 'email',
-            'label'           => trans('admin::app.datagrid.email'),
-            'type'            => 'string',
-            'sortable'        => true,
+            'index'    => 'email',
+            'label'    => trans('admin::app.datagrid.email'),
+            'type'     => 'string',
+            'sortable' => true,
         ]);
 
         $this->addColumn([
-            'index'              => 'status',
-            'label'              => trans('admin::app.datagrid.status'),
-            'type'               => 'dropdown',
-            'dropdown_options' => $this->getBooleanDropdownOptions('active_inactive'),
-            'searchable'         => false,
-            'closure'            => function ($row) {
+            'index'            => 'status',
+            'label'            => trans('admin::app.datagrid.status'),
+            'type'             => 'dropdown',
+            'dropdown_options' => $this->getBooleanDropdownOptions(),
+            'searchable'       => false,
+            'closure'          => function ($row) {
                 if ($row->status == 1) {
                     return '<span class="badge badge-round badge-primary"></span>' . trans('admin::app.datagrid.active');
                 } else {
@@ -75,12 +84,12 @@ class UserDataGrid extends DataGrid
         ]);
 
         $this->addColumn([
-            'index'           => 'created_at',
-            'label'           => trans('admin::app.datagrid.created_at'),
-            'type'            => 'date_range',
-            'searchable'      => false,
-            'sortable'        => true,
-            'closure'         => function ($row) {
+            'index'      => 'created_at',
+            'label'      => trans('admin::app.datagrid.created_at'),
+            'type'       => 'date_range',
+            'searchable' => false,
+            'sortable'   => true,
+            'closure'    => function ($row) {
                 return core()->formatDate($row->created_at);
             },
         ]);

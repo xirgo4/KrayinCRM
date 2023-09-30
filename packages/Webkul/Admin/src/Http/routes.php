@@ -1,6 +1,6 @@
 <?php
 
-Route::group(['middleware' => ['web']], function () {
+Route::group(['middleware' => ['web', 'admin_locale']], function () {
     Route::get('/', 'Webkul\Admin\Http\Controllers\Controller@redirectToLogin')->name('krayin.home');
 
     Route::prefix(config('app.admin_path'))->group(function () {
@@ -23,11 +23,11 @@ Route::group(['middleware' => ['web']], function () {
 
         Route::post('reset-password', 'Webkul\Admin\Http\Controllers\User\ResetPasswordController@store')->name('admin.reset_password.store');
 
-        Route::get('mail/inbound-parse', 'Webkul\Admin\Http\Controllers\Mail\EmailController@inboundParse')->name('admin.mail.inbound_parse');
+        Route::post('mail/inbound-parse', 'Webkul\Admin\Http\Controllers\Mail\EmailController@inboundParse')->name('admin.mail.inbound_parse');
 
         // Admin Routes
         Route::group(['middleware' => ['user']], function () {
-            Route::get('logout', 'Webkul\Admin\Http\Controllers\User\SessionController@destroy')->name('admin.session.destroy');
+            Route::delete('logout', 'Webkul\Admin\Http\Controllers\User\SessionController@destroy')->name('admin.session.destroy');
 
             // Dashboard Route
             Route::get('dashboard', 'Webkul\Admin\Http\Controllers\Admin\DashboardController@index')->name('admin.dashboard.index');
@@ -84,6 +84,8 @@ Route::group(['middleware' => ['web']], function () {
 
                 Route::delete('{lead_id}/{tag_id?}', 'TagController@delete')->name('admin.leads.tags.delete');
 
+                Route::get('get/{pipeline_id?}', 'LeadController@get')->name('admin.leads.get');
+
                 Route::get('{pipeline_id?}', 'LeadController@index')->name('admin.leads.index');
 
                 Route::group([
@@ -121,6 +123,10 @@ Route::group(['middleware' => ['web']], function () {
             ], function () {
                 Route::get('', 'ActivityController@index')->name('admin.activities.index');
 
+                Route::get('get', 'ActivityController@get')->name('admin.activities.get');
+
+                Route::post('is-overlapping', 'ActivityController@checkIfOverlapping')->name('admin.activities.check_overlapping');
+
                 Route::post('create', 'ActivityController@store')->name('admin.activities.store');
 
                 Route::get('edit/{id?}', 'ActivityController@edit')->name('admin.activities.edit');
@@ -135,6 +141,8 @@ Route::group(['middleware' => ['web']], function () {
 
                 Route::delete('{id?}', 'ActivityController@destroy')->name('admin.activities.delete');
 
+                Route::put('mass-update', 'ActivityController@massUpdate')->name('admin.activities.mass_update');
+
                 Route::put('mass-destroy', 'ActivityController@massDestroy')->name('admin.activities.mass_delete');
             });
 
@@ -144,7 +152,7 @@ Route::group(['middleware' => ['web']], function () {
             ], function () {
                 Route::post('create', 'EmailController@store')->name('admin.mail.store');
 
-                Route::put('edit/{id}', 'EmailController@update')->name('admin.mail.update');
+                Route::put('edit/{id?}', 'EmailController@update')->name('admin.mail.update');
 
                 Route::get('attachment-download/{id?}', 'EmailController@download')->name('admin.mail.attachment_download');
 
@@ -153,6 +161,8 @@ Route::group(['middleware' => ['web']], function () {
                 Route::get('{route?}/{id?}', 'EmailController@view')->name('admin.mail.view');
 
                 Route::delete('{id?}', 'EmailController@destroy')->name('admin.mail.delete');
+
+                Route::put('mass-update', 'EmailController@massUpdate')->name('admin.mail.mass_update');
 
                 Route::put('mass-destroy', 'EmailController@massDestroy')->name('admin.mail.mass_delete');
             });
@@ -176,7 +186,7 @@ Route::group(['middleware' => ['web']], function () {
 
                     Route::get('search', 'PersonController@search')->name('admin.contacts.persons.search');
 
-                    Route::delete('{id}', 'PersonController@destroy')->name('admin.contacts.persons.delete');
+                    Route::middleware(['throttle:100,60'])->delete('{id}', 'PersonController@destroy')->name('admin.contacts.persons.delete');
 
                     Route::put('mass-destroy', 'PersonController@massDestroy')->name('admin.contacts.persons.mass_delete');
                 });
@@ -291,6 +301,8 @@ Route::group(['middleware' => ['web']], function () {
                     Route::put('edit/{id}', 'AttributeController@update')->name('admin.settings.attributes.update');
 
                     Route::get('lookup/{lookup?}', 'AttributeController@lookup')->name('admin.settings.attributes.lookup');
+
+                    Route::get('lookup-entity/{lookup?}', 'AttributeController@lookupEntity')->name('admin.settings.attributes.lookup_entity');
 
                     Route::delete('{id}', 'AttributeController@destroy')->name('admin.settings.attributes.delete');
 

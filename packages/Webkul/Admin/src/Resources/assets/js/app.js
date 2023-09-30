@@ -1,18 +1,49 @@
-// import Vue from 'vue';
 import Vue from 'vue/dist/vue.js';
 import draggable from 'vuedraggable';
 import VueTimeago from 'vue-timeago';
 import VeeValidate from 'vee-validate';
 import VueKanban from 'vue-kanban';
+import VueCal from 'vue-cal';
+
+import 'vue-cal/dist/vuecal.css'
 
 import './bootstrap';
+
+/**
+ * Lang imports.
+ */
+ import ar from 'vee-validate/dist/locale/ar';
+ import de from 'vee-validate/dist/locale/de';
+ import es from 'vee-validate/dist/locale/es';
+ import fa from 'vee-validate/dist/locale/fa';
+ import fr from 'vee-validate/dist/locale/fr';
+ import nl from 'vee-validate/dist/locale/nl';
+ import tr from 'vee-validate/dist/locale/tr';
+ import hi_IN from 'vee-validate/dist/locale/hi';
+ import zh_CN from 'vee-validate/dist/locale/zh_CN';
+
+ import 'vue-cal/dist/i18n/ar.js';
+ import 'vue-cal/dist/i18n/tr.js';
+ 
+
 window.moment = require('moment');
 
 window.Vue = Vue;
 window.VeeValidate = VeeValidate;
 
 Vue.use(VeeValidate, {
-    events: 'input|change|blur',
+    dictionary: {
+        ar: ar,
+        de: de,
+        es: es,
+        fa: fa,
+        fr: fr,
+        nl: nl,
+        tr: tr,
+        hi_IN: hi_IN,
+        zh_CN: zh_CN
+    },
+    events: 'input|change|blur'
 });
 
 Vue.prototype.$http = axios;
@@ -20,12 +51,22 @@ Vue.prototype.$http = axios;
 window.eventBus = new Vue();
 
 Vue.use(VueKanban);
-Vue.use(VueTimeago, {name: 'Timeago', locale: 'en'})
+
+Vue.use(VueTimeago, {
+    name: 'Timeago',
+    locale: 'en',
+    locales: {
+        'ar': require('date-fns/locale/ar'),
+        'tr': require('date-fns/locale/tr')
+    }
+})
 
 Vue.component('draggable', draggable);
 
+Vue.component('vue-cal', VueCal);
+
 $(function() {
-    var app = new Vue({
+    let app = new Vue({
         el: "#app",
 
         data: function () {
@@ -33,12 +74,13 @@ $(function() {
                 pageLoaded: false,
 
                 modalIds: {},
-    
+
                 isMenuOpen: localStorage.getItem('crm-sidebar') == 'true',
             }
         },
 
         mounted() {
+            this.$validator.localize(document.documentElement.lang);
             setTimeout(() => {
                 this.pageLoaded = true;
 
@@ -46,7 +88,7 @@ $(function() {
             });
 
             this.addServerErrors();
-            
+
             this.addFlashMessages();
 
             window.addFlashMessages = flash => {
@@ -69,11 +111,34 @@ $(function() {
                         if (result) {
                             e.target.submit();
                         } else {
+                            this.activateAutoScroll();
                             this.toggleButtonDisable(false);
 
                             eventBus.$emit('onFormError')
                         }
                     });
+            },
+
+            activateAutoScroll: function(event) {
+                    
+                /**
+                 * This is normal Element
+                 */
+                const normalElement = document.querySelector(
+                    '.control-error:first-of-type'
+                );
+                /**
+                 * Scroll Config
+                 */
+                const scrollConfig = {
+                    behavior: 'smooth',
+                    block: 'end',
+                    inline: 'nearest',
+                }
+                if (normalElement) {
+                    normalElement.scrollIntoView(scrollConfig);
+                    return;
+                }
             },
 
             toggleButtonDisable (value) {
@@ -87,6 +152,7 @@ $(function() {
             addServerErrors(scope = null) {
                 for (var key in serverErrors) {
                     var inputNames = [];
+                    
                     key.split('.').forEach(function(chunk, index) {
                         if(index) {
                             inputNames.push('[' + chunk + ']')
@@ -149,4 +215,6 @@ $(function() {
             }
         }
     });
+
+    window.app = app;
 });

@@ -5,7 +5,6 @@
 @stop
 
 @section('content-wrapper')
-
     @php
         $quote = app('\Webkul\Quote\Repositories\QuoteRepository')->getModel();
 
@@ -162,33 +161,61 @@
 
                     <thead>
                         <tr>
-                            <th class="name">{{ __('admin::app.quotes.name') }}</th>
-
-                            <th class="quantity">{{ __('admin::app.quotes.quantity') }}</th>
+                            <th class="name">
+                                <div class="form-group">
+                                    <label class="required">
+                                        {{ __('admin::app.quotes.name') }}
+                                    </label>
+                                </div>
+                            </th>
+                            
+                            <th class="quantity">
+                                <div class="form-group">
+                                    <label class="required">
+                                        {{ __('admin::app.quotes.quantity') }}
+                                    </label>
+                                </div>
+                            </th>
 
                             <th class="price">
-                                {{ __('admin::app.quotes.price') }}
-                                <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                <div class="form-group">
+                                    <label class="required">
+                                        {{ __('admin::app.quotes.price') }}                                    
+                                      <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                    </label>
+                                </div>
                             </th>
 
                             <th class="amount">
-                                {{ __('admin::app.quotes.amount') }}
-                                <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                <div class="form-group">                                    
+                                    {{ __('admin::app.quotes.amount') }}                               
+                                    <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                </div>
                             </th>
 
                             <th class="discount">
-                                {{ __('admin::app.quotes.discount') }}
-                                <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                <div class="form-group">
+                                    <label class="required">                                         
+                                       {{ __('admin::app.quotes.discount') }}
+                                        <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                    </label>
+                                </div>
                             </th>
 
                             <th class="tax">
-                                {{ __('admin::app.quotes.tax') }}
-                                <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                <div class="form-group">
+                                    <label class="required">                                         
+                                        {{ __('admin::app.quotes.tax') }}
+                                        <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                    </label>
+                                </div>
                             </th>
 
                             <th class="total">
-                                {{ __('admin::app.quotes.total') }}
-                                <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                <div class="form-group">                                
+                                    {{ __('admin::app.quotes.total') }}
+                                    <span class="currency-code">({{ core()->currencySymbol(config('app.currency')) }})</span>
+                                </div>
                             </th>
 
                             <th class="actions"></th>
@@ -224,7 +251,7 @@
 
                         <td>
                             <div class="form-group">
-                                <input type="text" name="sub_total" class="control" :value="subTotal" readonly>
+                                <input type="text" name="sub_total" class="control" :value="subTotal" readonly >
                             </div>
                         </td>
                     </tr>
@@ -268,7 +295,7 @@
                         <td>-</td>
 
                         <td>
-                            <div class="form-group">
+                            <div class="form-group" :class="[errors.has('adjustment_amount') ? 'has-error' : '']">
                                 <input
                                     type="text"
                                     name="adjustment_amount"
@@ -276,7 +303,11 @@
                                     v-model="adjustmentAmount"
                                     v-validate="'decimal:4'"
                                     data-vv-as="&quot;{{ __('admin::app.quotes.adjustment') }}&quot;"
-                                    @keyup="validateAmount">
+                                />
+
+                                <span class="control-error" v-if="errors.has('adjustment_amount')">
+                                    @{{ errors.first('adjustment_amount') }}
+                                </span>
                             </div>
                         </td>
                     </tr>
@@ -313,6 +344,8 @@
                         v-validate="'required'"
                         data-vv-as="&quot;{{ __('admin::app.quotes.name') }}&quot;"
                         v-on:keyup="search"
+                        placeholder="{{ __('admin::app.quotes.search') }}"
+                        
                     />
 
                     <input
@@ -428,13 +461,13 @@
                     <input
                         type="text"
                         class="control"
-                        :value="parseInt(product.price * product.quantity) + parseInt(product.tax_amount) - parseInt(product.discount_amount)"
+                        :value="parseFloat(product.price * product.quantity) + parseFloat(product.tax_amount) - parseFloat(product.discount_amount)"
                         readonly/>
                 </div>
             </td>
 
             <td class="actions">
-                <i class="icon trash-icon" @click="removeProduct"></i>
+                <i class="icon trash-icon" @click="removeProduct" v-if="this.$parent.products.length > 1"></i>
             </td>
         </tr>
     </script>
@@ -469,7 +502,7 @@
                     var total = 0;
 
                     this.products.forEach(product => {
-                        total += parseInt(product.price * product.quantity);
+                        total += parseFloat(product.price * product.quantity);
                     });
 
                     return total;
@@ -479,7 +512,7 @@
                     var total = 0;
 
                     this.products.forEach(product => {
-                        total += parseInt(product.discount_amount);
+                        total += parseFloat(product.discount_amount);
                     });
 
                     return total;
@@ -489,7 +522,7 @@
                     var total = 0;
 
                     this.products.forEach(product => {
-                        total += parseInt(product.tax_amount);
+                        total += parseFloat(product.tax_amount);
                     });
 
                     return total;
@@ -499,7 +532,7 @@
                     var total = 0;
 
                     this.products.forEach(product => {
-                        total += parseInt(product.price * product.quantity) + parseInt(product.tax_amount) - parseInt(product.discount_amount) + parseInt(this.adjustmentAmount);
+                        total += parseFloat(product.price * product.quantity) + parseFloat(product.tax_amount) - parseFloat(product.discount_amount) + parseFloat(this.adjustmentAmount);
                     });
 
                     return total;
@@ -535,10 +568,6 @@
 
                         Vue.delete(this.products, index);
                     }
-                },
-
-                validateAmount: function () {
-                    this.adjustmentAmount = this.adjustmentAmount.replace(/[^0-9.]/g, '');
                 }
             }
         });

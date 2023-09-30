@@ -48,10 +48,16 @@
 
                             <tab name="{{ __('admin::app.leads.details') }}" :selected="true">
                                 @include('admin::common.custom-attributes.edit', [
-                                    'customAttributes' => app('Webkul\Attribute\Repositories\AttributeRepository')->findWhere([
+                                    'customAttributes'  => app('Webkul\Attribute\Repositories\AttributeRepository')->findWhere([
                                         'entity_type' => 'leads',
                                         'quick_add'   => 1
                                     ]),
+                                    'customValidations' => [
+                                        'expected_close_date' => [
+                                            'date_format:yyyy-MM-dd',
+                                            'after:' .  \Carbon\Carbon::yesterday()->format('Y-m-d')
+                                        ],
+                                    ],
                                 ])
                             </tab>
 
@@ -63,18 +69,18 @@
                             <tab name="{{ __('admin::app.leads.contact-person') }}">
                                 @include('admin::leads.common.contact')
 
-                                <contact-component></contact-component>
+                                <contact-component :data='@json(old('person'))'></contact-component>
                             </tab>
 
                             {!! view_render_event('admin.leads.create.form_controls.contact_person.after') !!}
 
 
-                            {!! view_render_event('admin.leads.create.form_controls.products.before') !!}
+                            {!! view_render_event('admin.leads.create.form_controls.products.before') !!} 
 
                             <tab name="{{ __('admin::app.leads.products') }}">
                                 @include('admin::leads.common.products')
 
-                                <product-list></product-list>
+                                <product-list :data='@json(old('products'))'></product-list>
                             </tab>
 
                             {!! view_render_event('admin.leads.create.form_controls.products.after') !!}
